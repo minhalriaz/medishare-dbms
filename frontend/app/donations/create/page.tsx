@@ -4,44 +4,37 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
-import { api } from '@/services/api';
-import { MedicineItem } from '@/types/donation';
-import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
+import { api } from '@/services/api';//backend for create
+import { DonationItem } from '@/types/donation';
+import { ArrowLeft, Plus, Trash2, Save, AlertCircle } from 'lucide-react';
+
+type NewItem = Omit<DonationItem, 'donation_item_id' | 'donation_id'>;
+
+const emptyItem = (): NewItem => ({
+  medicine_id: 0,
+  batch_number: '',
+  quantity: 1,
+  manufacturing_date: '',
+  expiry_date: '',
+  packaging_condition: 'Good',
+  storage_condition: 'Room Temperature',
+});
 
 export default function CreateDonationPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [donor, setDonor] = useState('');
-  const [receivingOrganization, setReceivingOrganization] = useState('');
-  const [donationDate, setDonationDate] = useState(new Date().toISOString().split('T')[0]);
-  const [donorNote, setDonorNote] = useState('');
-  const [status, setStatus] = useState<'Pending' | 'Completed' | 'Received' | 'Cancelled'>('Pending');
+  const [donor_user_id, setDonorUserId] = useState<number | ''>('');
+  const [receiving_organization_id, setReceivingOrgId] = useState<number | ''>('');
+  const [donation_date, setDonationDate] = useState(
+    new Date().toISOString().split('T')[0],
+  );
+  const [donor_note, setDonorNote] = useState('');
+  const [donation_status, setDonationStatus] = useState('Pending');
+  const [medicineItems, setMedicineItems] = useState<NewItem[]>([emptyItem()]);
 
-  const [medicineItems, setMedicineItems] = useState<MedicineItem[]>([
-    {
-      medicineName: '',
-      batchNumber: '',
-      quantity: 1,
-      mfgDate: '',
-      expDate: '',
-      packagingCondition: 'Good',
-    },
-  ]);
-
-  const handleAddItem = () => {
-    setMedicineItems([
-      ...medicineItems,
-      {
-        medicineName: '',
-        batchNumber: '',
-        quantity: 1,
-        mfgDate: '',
-        expDate: '',
-        packagingCondition: 'Good',
-      },
-    ]);
-  };
+  const handleAddItem = () => setMedicineItems([...medicineItems, emptyItem()]);
 
   const handleRemoveItem = (index: number) => {
     if (medicineItems.length > 1) {
@@ -49,7 +42,7 @@ export default function CreateDonationPage() {
     }
   };
 
-  const handleItemChange = (index: number, field: keyof MedicineItem, value: any) => {
+  const handleItemChange = (index: number, field: keyof NewItem, value: string | number) => {
     const updated = [...medicineItems];
     updated[index] = { ...updated[index], [field]: value };
     setMedicineItems(updated);
@@ -57,21 +50,25 @@ export default function CreateDonationPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setLoading(true);
 
-    const payload = {
-      donor,
-      receivingOrganization,
-      donationDate,
-      donorNote,
-      status,
-      medicineItems,
-      totalValue: medicineItems.length * 50,
-    };
-
-    await api.createDonation(payload);
-    setLoading(false);
-    router.push('/donations');
+//backend
+    try {
+      await api.createDonation({
+        donor_user_id: Number(donor_user_id),
+        receiving_organization_id: Number(receiving_organization_id),
+        donation_date,
+        donation_status,
+        donor_note: donor_note || undefined,
+        donation_items: medicineItems,
+      });
+      router.push('/donations');
+    } catch (err: any) {
+      setError(err?.message ?? 'Failed to create donation. Check your input and try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -90,53 +87,94 @@ export default function CreateDonationPage() {
           <h1 className="text-2xl font-bold text-gray-800">Create New Donation</h1>
         </div>
 
+        {/* Error Banner */}
+        {error && (
+          <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-rose-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-rose-700">Submission Failed</p>
+              <p className="text-xs text-rose-500 mt-0.5">{error}</p>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6 max-w-5xl">
           {/* Donation Info */}
           <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
             <h2 className="text-base font-bold text-gray-800 mb-4">Donation Information</h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Donor Name</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Donor User ID <span className="text-rose-500">*</span>
+                </label>
                 <input
-                  type="text"
+                  type="number"
                   required
-                  placeholder="e.g. Sarah Johnson"
-                  value={donor}
-                  onChange={(e) => setDonor(e.target.value)}
+                  min={1}
+                  placeholder="e.g. 1"
+                  value={donor_user_id}
+                  onChange={(e) => setDonorUserId(e.target.value === '' ? '' : Number(e.target.value))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                 />
+                <p className="text-[11px] text-gray-400 mt-1">Integer FK to the users table</p>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Receiving Organization</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Receiving Organization ID <span className="text-rose-500">*</span>
+                </label>
                 <input
-                  type="text"
+                  type="number"
                   required
-                  placeholder="e.g. City Hospital"
-                  value={receivingOrganization}
-                  onChange={(e) => setReceivingOrganization(e.target.value)}
+                  min={1}
+                  placeholder="e.g. 2"
+                  value={receiving_organization_id}
+                  onChange={(e) =>
+                    setReceivingOrgId(e.target.value === '' ? '' : Number(e.target.value))
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                 />
+                <p className="text-[11px] text-gray-400 mt-1">Integer FK to the organizations table</p>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Donation Date</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Donation Date <span className="text-rose-500">*</span>
+                </label>
                 <input
                   type="date"
                   required
-                  value={donationDate}
+                  value={donation_date}
                   onChange={(e) => setDonationDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm text-gray-900 bg-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Donor Note</label>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Status <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={donation_status}
+                  onChange={(e) => setDonationStatus(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm text-gray-900 bg-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Completed">Completed</option>
+                  <option value="Received">Received</option>
+                  <option value="Cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  Donor Note
+                </label>
                 <input
                   type="text"
                   placeholder="e.g. Keep in cool storage"
-                  value={donorNote}
+                  value={donor_note}
                   onChange={(e) => setDonorNote(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                 />
@@ -160,7 +198,10 @@ export default function CreateDonationPage() {
 
             <div className="space-y-4">
               {medicineItems.map((item, index) => (
-                <div key={index} className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 relative">
+                <div
+                  key={index}
+                  className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 relative"
+                >
                   <div className="flex justify-between items-center mb-3">
                     <span className="text-xs font-bold text-emerald-600">Item #{index + 1}</span>
                     {medicineItems.length > 1 && (
@@ -177,71 +218,112 @@ export default function CreateDonationPage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">Medicine Name</label>
+                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                        Medicine ID <span className="text-rose-500">*</span>
+                      </label>
                       <input
-                        type="text"
+                        type="number"
                         required
-                        placeholder="e.g. Paracetamol 500mg"
-                        value={item.medicineName}
-                        onChange={(e) => handleItemChange(index, 'medicineName', e.target.value)}
+                        min={1}
+                        placeholder="e.g. 1"
+                        value={item.medicine_id || ''}
+                        onChange={(e) =>
+                          handleItemChange(index, 'medicine_id', Number(e.target.value))
+                        }
                         className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:border-emerald-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">Batch Number</label>
+                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                        Batch Number <span className="text-rose-500">*</span>
+                      </label>
                       <input
                         type="text"
                         required
                         placeholder="BATCH-001"
-                        value={item.batchNumber}
-                        onChange={(e) => handleItemChange(index, 'batchNumber', e.target.value)}
+                        value={item.batch_number}
+                        onChange={(e) => handleItemChange(index, 'batch_number', e.target.value)}
                         className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:border-emerald-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">Quantity</label>
+                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                        Quantity <span className="text-rose-500">*</span>
+                      </label>
                       <input
                         type="number"
                         min="1"
                         required
                         value={item.quantity}
-                        onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 1)}
+                        onChange={(e) =>
+                          handleItemChange(index, 'quantity', parseInt(e.target.value) || 1)
+                        }
                         className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:border-emerald-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">Manufacturing Date</label>
+                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                        Manufacturing Date
+                      </label>
                       <input
                         type="date"
-                        value={item.mfgDate}
-                        onChange={(e) => handleItemChange(index, 'mfgDate', e.target.value)}
+                        value={item.manufacturing_date}
+                        onChange={(e) =>
+                          handleItemChange(index, 'manufacturing_date', e.target.value)
+                        }
                         className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:border-emerald-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">Expiry Date</label>
+                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                        Expiry Date <span className="text-rose-500">*</span>
+                      </label>
                       <input
                         type="date"
-                        value={item.expDate}
-                        onChange={(e) => handleItemChange(index, 'expDate', e.target.value)}
+                        required
+                        value={item.expiry_date}
+                        onChange={(e) => handleItemChange(index, 'expiry_date', e.target.value)}
                         className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:border-emerald-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">Packaging Condition</label>
+                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                        Packaging Condition
+                      </label>
                       <select
-                        value={item.packagingCondition}
-                        onChange={(e) => handleItemChange(index, 'packagingCondition', e.target.value)}
+                        value={item.packaging_condition}
+                        onChange={(e) =>
+                          handleItemChange(index, 'packaging_condition', e.target.value)
+                        }
                         className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:border-emerald-500"
                       >
                         <option value="Good">Good</option>
-                        <option value="Damaged">Damaged</option>
+                        <option value="Sealed">Sealed</option>
                         <option value="Opened">Opened</option>
+                        <option value="Damaged">Damaged</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                        Storage Condition
+                      </label>
+                      <select
+                        value={item.storage_condition}
+                        onChange={(e) =>
+                          handleItemChange(index, 'storage_condition', e.target.value)
+                        }
+                        className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white focus:outline-none focus:border-emerald-500"
+                      >
+                        <option value="Room Temperature">Room Temperature</option>
+                        <option value="Cool Place">Cool Place</option>
+                        <option value="Refrigerated">Refrigerated</option>
+                        <option value="Frozen">Frozen</option>
                       </select>
                     </div>
                   </div>

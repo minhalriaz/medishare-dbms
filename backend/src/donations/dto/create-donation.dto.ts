@@ -1,10 +1,14 @@
+import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsDateString,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
+import { CreateDonationItemDto } from './create-donation-item.dto';
 
 export class CreateDonationDto {
   @IsInt()
@@ -23,4 +27,10 @@ export class CreateDonationDto {
   @IsOptional()
   @IsString()
   donor_note?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateDonationItemDto)
+  donation_items?: CreateDonationItemDto[];
 }

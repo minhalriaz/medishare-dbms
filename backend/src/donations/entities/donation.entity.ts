@@ -26,6 +26,7 @@ export class Donation {
     @Column({ name: 'donor_note', type: 'text', nullable: true })
     donor_note: string;
 
-    @OneToMany(() => DonationItem, (item) => item.donation)
+    
+    @OneToMany(() => DonationItem, (item) => item.donation, { cascade: true })
     donation_items: DonationItem[];
 }
