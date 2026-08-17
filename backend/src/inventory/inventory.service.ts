@@ -25,7 +25,9 @@ export class InventoryService {
 
   // READ ONE
   async findOne(id: number) {
-    const inventory = await this.inventoryRepository.findOneBy({ id });
+    const inventory = await this.inventoryRepository.findOneBy({
+  inventory_id: id,
+});
 
     if (!inventory) {
       throw new NotFoundException(`Inventory with ID ${id} not found`);
