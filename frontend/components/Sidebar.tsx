@@ -1,63 +1,69 @@
+'use client';
+
 import Link from 'next/link';
-import { 
-  LayoutDashboard, 
-  HeartHandshake, 
-  Pill, 
-  FileText, 
-  Building2, 
-  Users, 
-  BarChart2, 
-  Settings,
+import { usePathname } from 'next/navigation';
+import {
+  BarChart2,
+  Building2,
+  FileText,
   HandHeart,
-  Stethoscope,
-  Heart
+  HeartHandshake,
+  LayoutDashboard,
+  Pill,
+  Settings,
+  Users,
 } from 'lucide-react';
 
+const menuItems = [
+  { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
+  { name: 'Donations', icon: HeartHandshake, href: '/donations' },
+  { name: 'Medicine Inventory', icon: Pill, href: '/inventory' },
+  { name: 'Requests', icon: FileText, href: '#' },
+  { name: 'Organizations', icon: Building2, href: '#' },
+  { name: 'Users', icon: Users, href: '#' },
+  { name: 'Reports', icon: BarChart2, href: '#' },
+  { name: 'Settings', icon: Settings, href: '#' },
+];
+
 export default function Sidebar() {
-  const menuItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, href: '#' },
-    { name: 'Donations', icon: HeartHandshake, href: '/donations', active: true },
-    { name: 'Medicine Inventory', icon: Pill, href: '#' },
-    { name: 'Requests', icon: FileText, href: '#' },
-    { name: 'Organizations', icon: Building2, href: '#' },
-    { name: 'Donors', icon: Users, href: '#' },
-    { name: 'Reports', icon: BarChart2, href: '#' },
-    { name: 'Settings', icon: Settings, href: '#' },
-  ];
+  const pathname = usePathname();
 
   return (
-    <aside className="w-64 bg-white h-screen border-r border-gray-200 flex flex-col justify-between fixed left-0 top-0 z-10">
+    <aside className="fixed left-0 top-0 z-30 hidden h-screen w-64 flex-col justify-between border-r border-gray-200 bg-white lg:flex">
       <div>
-        {/* Brand Logo with Lucide Icon */}
-        <div className="p-6 flex items-center gap-3">
-          <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-sm">
-            <HandHeart className="w-6 h-6" />
+        <div className="flex items-center gap-3 p-6">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
+            <HandHeart className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900 leading-tight">
+            <h1 className="text-lg font-bold leading-tight text-gray-900">
               Medi<span className="text-emerald-600">Share</span>
             </h1>
-            <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400">
               Free Medicine Donation
             </p>
           </div>
         </div>
 
-        {/* Navigation Links */}
-        <nav className="mt-2 px-4 space-y-1">
+        <nav className="mt-2 space-y-1 px-4">
           {menuItems.map((item) => {
             const Icon = item.icon;
+            const active =
+              item.href !== '#' &&
+              (pathname === item.href ||
+                (item.href !== '/' && pathname.startsWith(`${item.href}/`)));
+
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                  item.active
-                    ? 'bg-emerald-50 text-emerald-600'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
+                  active
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                 }`}
               >
-                <Icon className="w-5 h-5" />
+                <Icon className={`h-5 w-5 ${active ? 'text-emerald-600' : 'text-gray-400'}`} />
                 {item.name}
               </Link>
             );
@@ -65,13 +71,13 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      {/* Footer Banner with Lucide Icon */}
-      <div className="p-4 m-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-        <div className="text-emerald-600 mb-2">
-          <Heart className="w-5 h-5 fill-emerald-600" />
+      <div className="border-t border-gray-100 p-4">
+        <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 p-4">
+          <p className="text-xs font-semibold text-emerald-800">MediShare Admin</p>
+          <p className="mt-1 text-[11px] leading-4 text-emerald-700/70">
+            Manage donations and medicine distribution from one place.
+          </p>
         </div>
-        <h4 className="text-sm font-semibold text-emerald-900">Every donation makes a difference</h4>
-        <p className="text-xs text-emerald-700 mt-1">Thank you for being part of MediShare.</p>
       </div>
     </aside>
   );
