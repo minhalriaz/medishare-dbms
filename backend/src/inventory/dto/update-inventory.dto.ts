@@ -1,6 +1,5 @@
 import {
   IsInt,
-  IsNotEmpty,
   IsOptional,
   IsString,
   Min,
@@ -29,11 +28,9 @@ export class UpdateInventoryDto {
 
   @IsOptional()
   @IsString()
-  @IsNotEmpty()
   storage_location?: string;
 
   @IsOptional()
   @IsString()
-  @IsNotEmpty()
   inventory_status?: string;
 }

@@ -18,7 +18,6 @@ export interface Donation {
   status: 'Pending' | 'Completed' | 'Received' | 'Cancelled';
   donorNote?: string;
   itemsCount?: number;
-  totalValue?: number;
   medicineItems: MedicineItem[];
 }
 
