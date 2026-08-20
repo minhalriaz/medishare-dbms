@@ -25,4 +25,22 @@ export class OrganizationsController {
   getOrganizationStatistics() {
     return this.organizationsService.getOrganizationStatistics();
   }
+
+  @Get('user-relationship')
+  getUserOrganizationRelationship() {
+    return this.organizationsService.getUserOrganizationRelationship();
+  }
+
+  @Get('complete-directory')
+  getCompleteUserOrganizationDirectory() {
+    return this.organizationsService.getCompleteUserOrganizationDirectory();
+  }
+  @Get('sufficient-stock')
+  getOrganizationsWithSufficientStock() {
+    return this.organizationsService.getOrganizationsWithSufficientStock();
+  }
+  @Get('above-average-stock')
+  getOrganizationsAboveAverageStock() {
+    return this.organizationsService.getOrganizationsAboveAverageStock();
+  }
 }
