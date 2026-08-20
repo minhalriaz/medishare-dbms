@@ -1,5 +1,8 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import mysql, { Pool } from 'mysql2/promise';
+import mysql, {
+  Pool,
+  PoolConnection,
+} from 'mysql2/promise';
 
 @Injectable()
 export class DatabaseService implements OnModuleDestroy {
@@ -23,6 +26,11 @@ export class DatabaseService implements OnModuleDestroy {
     const [rows] = await this.pool.execute(sql, params);
 
     return rows;
+  }
+
+  // Used when multiple SQL queries must succeed together
+  async getConnection(): Promise<PoolConnection> {
+    return this.pool.getConnection();
   }
 
   async onModuleDestroy() {

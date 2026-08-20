@@ -11,10 +11,15 @@ const configuredOrigins = process.env.FRONTEND_URL
   .filter(Boolean);
 
 app.enableCors({
-  origin: configuredOrigins?.length
-    ? configuredOrigins
-    : ['http://localhost:3000', 'http://localhost:3001'],
-  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  origin: '*',
+  methods: [
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+    'OPTIONS',
+  ],
   allowedHeaders: ['Content-Type', 'Authorization'],
 });
 
