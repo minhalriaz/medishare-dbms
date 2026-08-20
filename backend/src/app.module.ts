@@ -8,11 +8,15 @@ import { DonationsModule } from './donations/donations.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { MedicineModule } from './medicine/medicine.module';
 
+import { OrganizationsModule } from './organizations/organizations.module';
+import { DatabaseModule } from './database/database.module';
 @Module({
     imports: [
         ConfigModule.forRoot({
             isGlobal: true,
         }),
+        DatabaseModule,
+        
 
         TypeOrmModule.forRoot({
             type: 'mysql',
@@ -28,6 +32,7 @@ import { MedicineModule } from './medicine/medicine.module';
         DonationsModule,
         InventoryModule,
         MedicineModule,
+        OrganizationsModule,
     ],
 
     controllers: [AppController],
