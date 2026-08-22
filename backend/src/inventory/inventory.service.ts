@@ -1,53 +1,83 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { CreateInventoryDto } from './dto/create-inventory.dto';
 import { UpdateInventoryDto } from './dto/update-inventory.dto';
-import { Inventory } from './entities/inventory.entity';
 
 @Injectable()
 export class InventoryService {
   constructor(
-    @InjectRepository(Inventory)
-    private readonly inventoryRepository: Repository<Inventory>,
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
   ) {}
 
   // CREATE
   async create(createInventoryDto: CreateInventoryDto) {
-    const inventory = this.inventoryRepository.create(createInventoryDto);
-    return await this.inventoryRepository.save(inventory);
+    const { medicine_name, batch_number, quantity, expiry_date, status } = createInventoryDto as any;
+
+    const result = await this.dataSource.query(
+      `INSERT INTO inventory (medicine_name, batch_number, quantity, expiry_date, status)
+       OUTPUT inserted.id AS id
+       VALUES (?, ?, ?, ?, ?)`,
+      [medicine_name, batch_number, quantity, expiry_date, status ?? 'Available'],
+    );
+
+    const id = result && result[0] && result[0].id;
+
+    const rows = await this.dataSource.query('SELECT * FROM inventory WHERE id = ?', [id]);
+    return rows[0];
   }
 
   // READ ALL
   async findAll() {
-    return await this.inventoryRepository.find();
+    return await this.dataSource.query('SELECT * FROM inventory');
   }
 
   // READ ONE
   async findOne(id: number) {
-    const inventory = await this.inventoryRepository.findOneBy({ id });
+    const rows = await this.dataSource.query('SELECT * FROM inventory WHERE id = ?', [id]);
 
-    if (!inventory) {
+    if (!rows || !rows[0]) {
       throw new NotFoundException(`Inventory with ID ${id} not found`);
     }
 
-    return inventory;
+    return rows[0];
   }
 
   // UPDATE
   async update(id: number, updateInventoryDto: UpdateInventoryDto) {
-    const inventory = await this.findOne(id);
+    const existing = await this.dataSource.query('SELECT * FROM inventory WHERE id = ?', [id]);
+    if (!existing || !existing[0]) {
+      throw new NotFoundException(`Inventory with ID ${id} not found`);
+    }
 
-    Object.assign(inventory, updateInventoryDto);
+    const setClauses: string[] = [];
+    const params: any[] = [];
 
-    return await this.inventoryRepository.save(inventory);
+    for (const [key, value] of Object.entries(updateInventoryDto as any)) {
+      if (value !== undefined) {
+        setClauses.push(`${key} = ?`);
+        params.push(value);
+      }
+    }
+
+    if (setClauses.length > 0) {
+      params.push(id);
+      await this.dataSource.query(`UPDATE inventory SET ${setClauses.join(', ')} WHERE id = ?`, params);
+    }
+
+    const rows = await this.dataSource.query('SELECT * FROM inventory WHERE id = ?', [id]);
+    return rows[0];
   }
 
   // DELETE
   async remove(id: number) {
-    const inventory = await this.findOne(id);
+    const existing = await this.dataSource.query('SELECT * FROM inventory WHERE id = ?', [id]);
+    if (!existing || !existing[0]) {
+      throw new NotFoundException(`Inventory with ID ${id} not found`);
+    }
 
-    await this.inventoryRepository.remove(inventory);
+    await this.dataSource.query('DELETE FROM inventory WHERE id = ?', [id]);
 
     return {
       message: `Inventory with ID ${id} deleted successfully`,

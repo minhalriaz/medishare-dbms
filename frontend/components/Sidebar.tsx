@@ -9,7 +9,6 @@ import {
   BarChart2, 
   Settings,
   HandHeart,
-  Stethoscope,
   Heart
 } from 'lucide-react';
 

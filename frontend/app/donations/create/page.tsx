@@ -266,10 +266,11 @@ export default function CreateDonationPage() {
 
                     <div>
                       <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                        Manufacturing Date
+                        Manufacturing Date <span className="text-rose-500">*</span>
                       </label>
                       <input
                         type="date"
+                        required
                         value={item.manufacturing_date}
                         onChange={(e) =>
                           handleItemChange(index, 'manufacturing_date', e.target.value)

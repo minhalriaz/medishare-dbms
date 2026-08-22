@@ -32,7 +32,7 @@ export default function DonationsPage() {
     try {
       const data = await api.getDonations();// 🔴 CALLS BACKEND - GET
       setDonations(data);
-    } catch (err) {
+    } catch {
       setError('Could not load donations. Make sure the backend is running on http://localhost:3000');
       setDonations([]);
     } finally {
@@ -50,7 +50,7 @@ export default function DonationsPage() {
         await api.deleteDonation(id);// 🔴 CALLS BACKEND - DELETE
         setDonations((prev) => prev.filter((d) => d.donation_id !== id));
         if (selectedDonation?.donation_id === id) setSelectedDonation(null);
-      } catch (err) {
+      } catch {
         alert('Failed to delete donation. Please try again.');
       }
     }

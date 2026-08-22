@@ -127,9 +127,8 @@ export default function EditDonationPage({
       setSaving(false);
     }
   };
-// 🔴 The backend receives this data and processes the update.
-// The NestJS controller then passes it to DonationsService.update(),
-// which saves the changes to MySQL through TypeORM.
+// The backend receives this data and processes the update:
+// Frontend → NestJS REST API → DonationsService → DataSource.query() raw SQL → SQL Server.
   if (loading) {
     return (
       <div className="flex bg-gray-50 min-h-screen">
@@ -334,10 +333,11 @@ export default function EditDonationPage({
 
                     <div>
                       <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                        Manufacturing Date
+                        Manufacturing Date <span className="text-rose-500">*</span>
                       </label>
                       <input
                         type="date"
+                        required
                         value={item.manufacturing_date}
                         onChange={(e) =>
                           handleItemChange(index, 'manufacturing_date', e.target.value)
