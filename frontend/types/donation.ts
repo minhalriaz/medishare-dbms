@@ -10,6 +10,11 @@ export interface DonationItem {
   expiry_date: string;        
   packaging_condition: string;
   storage_condition: string;
+  medicine_name?: string;
+  generic_name?: string;
+  manufacturer?: string;
+  dosage_form?: string;
+  strength?: string;
 }
 
 export interface Donation {

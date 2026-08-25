@@ -109,7 +109,16 @@ export default function DonationDetailsPanel({ donation, onClose }: Props) {
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-semibold text-gray-800 text-xs">Medicine ID: #{item.medicine_id}</p>
+                  <p className="font-semibold text-gray-800 text-xs">
+                    {item.medicine_name
+                      ? `${item.medicine_name} (ID: #${item.medicine_id})`
+                      : `Medicine ID: #${item.medicine_id}`}
+                  </p>
+                  {item.generic_name && (
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      Generic: {item.generic_name}
+                    </p>
+                  )}
                   <p className="text-[11px] text-gray-400 mt-0.5">Batch: {item.batch_number}</p>
                   <p className="text-[11px] text-gray-400">
                     Expires:{' '}
