@@ -27,7 +27,7 @@ export class OrganizationsService {
         u.email AS representative_email,
         u.phone AS representative_phone
       FROM organization o
-      INNER JOIN \`user\` u
+      INNER JOIN [user] u
         ON o.user_id = u.user_id
       ORDER BY o.organization_name ASC;
     `;
@@ -184,7 +184,7 @@ export class OrganizationsService {
 
       FROM organization o
 
-      RIGHT OUTER JOIN \`user\` u
+      RIGHT OUTER JOIN [user] u
         ON o.user_id = u.user_id
 
       ORDER BY u.user_id ASC;
@@ -194,7 +194,7 @@ export class OrganizationsService {
   }
     // =====================================================
   // FEATURE 6: Complete User-Organization Directory
-  // SQL Concept: FULL OUTER JOIN equivalent in MySQL
+  // SQL Concept: FULL OUTER JOIN equivalent
   // Implemented using LEFT OUTER JOIN + RIGHT OUTER JOIN + UNION
   // =====================================================
   async getCompleteUserOrganizationDirectory() {
@@ -210,7 +210,7 @@ export class OrganizationsService {
         o.organization_type,
         o.verification_status
 
-      FROM \`user\` u
+      FROM [user] u
 
       LEFT OUTER JOIN organization o
         ON u.user_id = o.user_id
@@ -230,7 +230,7 @@ export class OrganizationsService {
         o.organization_type,
         o.verification_status
 
-      FROM \`user\` u
+      FROM [user] u
 
       RIGHT OUTER JOIN organization o
         ON u.user_id = o.user_id
@@ -357,15 +357,15 @@ export class OrganizationsService {
 
       FROM organization o
 
-      INNER JOIN \`user\` u
+      INNER JOIN [user] u
         ON o.user_id = u.user_id
 
       WHERE
-        o.organization_name LIKE CONCAT('%', ?, '%')
-        OR o.organization_type LIKE CONCAT('%', ?, '%')
-        OR o.licence_number LIKE CONCAT('%', ?, '%')
-        OR o.organization_address LIKE CONCAT('%', ?, '%')
-        OR u.full_name LIKE CONCAT('%', ?, '%')
+        o.organization_name LIKE CONCAT('%', @0, '%')
+        OR o.organization_type LIKE CONCAT('%', @1, '%')
+        OR o.licence_number LIKE CONCAT('%', @2, '%')
+        OR o.organization_address LIKE CONCAT('%', @3, '%')
+        OR u.full_name LIKE CONCAT('%', @4, '%')
 
       ORDER BY o.organization_name ASC;
     `;
@@ -400,17 +400,7 @@ export class OrganizationsService {
     organization_address?: string;
     verification_status?: string;
   }) {
-    const connection =
-      await this.databaseService.getConnection();
-
-    try {
-      // Start transaction
-      await connection.beginTransaction();
-
-      // ---------------------------------------------
-      // Validate required fields
-      // ---------------------------------------------
-
+    return this.databaseService.transaction(async (manager) => {
       if (
         !data.full_name ||
         !data.email ||
@@ -423,22 +413,15 @@ export class OrganizationsService {
         );
       }
 
-      // ---------------------------------------------
-      // RAW SQL 1:
-      // Check whether email already exists
-      // ---------------------------------------------
-
       const checkEmailSql = `
-        SELECT user_id
-        FROM \`user\`
-        WHERE email = ?
-        LIMIT 1;
+        SELECT TOP 1 user_id
+        FROM [user]
+        WHERE email = @0;
       `;
 
-      const [existingUsers]: any =
-        await connection.execute(checkEmailSql, [
-          data.email,
-        ]);
+      const existingUsers: any = await manager.query(checkEmailSql, [
+        data.email,
+      ]);
 
       if (existingUsers.length > 0) {
         throw new ConflictException(
@@ -446,22 +429,16 @@ export class OrganizationsService {
         );
       }
 
-      // ---------------------------------------------
-      // RAW SQL 2:
-      // Check whether licence already exists
-      // ---------------------------------------------
-
       const checkLicenceSql = `
-        SELECT organization_id
+        SELECT TOP 1 organization_id
         FROM organization
-        WHERE licence_number = ?
-        LIMIT 1;
+        WHERE licence_number = @0;
       `;
 
-      const [existingOrganizations]: any =
-        await connection.execute(checkLicenceSql, [
-          data.licence_number,
-        ]);
+      const existingOrganizations: any = await manager.query(
+        checkLicenceSql,
+        [data.licence_number],
+      );
 
       if (existingOrganizations.length > 0) {
         throw new ConflictException(
@@ -469,13 +446,8 @@ export class OrganizationsService {
         );
       }
 
-      // ---------------------------------------------
-      // RAW SQL 3:
-      // Insert representative into USER
-      // ---------------------------------------------
-
       const insertUserSql = `
-        INSERT INTO \`user\`
+        INSERT INTO [user]
         (
           full_name,
           email,
@@ -485,36 +457,28 @@ export class OrganizationsService {
           user_type,
           account_status
         )
+        OUTPUT inserted.user_id AS user_id
         VALUES
         (
-          ?,
-          ?,
-          ?,
-          ?,
-          ?,
+          @0,
+          @1,
+          @2,
+          @3,
+          @4,
           'Organization',
           'Active'
         );
       `;
 
-      const [userResult]: any =
-        await connection.execute(insertUserSql, [
-          data.full_name,
-          data.email,
-          data.phone || null,
-          data.address || null,
+      const userResult: any = await manager.query(insertUserSql, [
+        data.full_name,
+        data.email,
+        data.phone || null,
+        data.address || null,
+        'ORGANIZATION_ACCOUNT_PENDING_AUTH',
+      ]);
 
-          // Temporary value because authentication
-          // is outside this Organization feature.
-          'ORGANIZATION_ACCOUNT_PENDING_AUTH',
-        ]);
-
-      const userId = userResult.insertId;
-
-      // ---------------------------------------------
-      // RAW SQL 4:
-      // Insert ORGANIZATION using new user_id
-      // ---------------------------------------------
+      const userId = userResult[0].user_id;
 
       const insertOrganizationSql = `
         INSERT INTO organization
@@ -526,41 +490,30 @@ export class OrganizationsService {
           organization_address,
           verification_status
         )
-        VALUES (?, ?, ?, ?, ?, ?);
+        OUTPUT inserted.organization_id AS organization_id
+        VALUES (@0, @1, @2, @3, @4, @5);
       `;
 
-      const [organizationResult]: any =
-        await connection.execute(
-          insertOrganizationSql,
-          [
-            userId,
-            data.organization_name,
-            data.organization_type,
-            data.licence_number,
-            data.organization_address || null,
-            data.verification_status || 'Pending',
-          ],
-        );
+      const organizationResult: any = await manager.query(
+        insertOrganizationSql,
+        [
+          userId,
+          data.organization_name,
+          data.organization_type,
+          data.licence_number,
+          data.organization_address || null,
+          data.verification_status || 'Pending',
+        ],
+      );
 
-      const organizationId =
-        organizationResult.insertId;
-
-      // Both INSERT queries succeeded
-      await connection.commit();
+      const organizationId = organizationResult[0].organization_id;
 
       return {
         message: 'Organization created successfully',
         user_id: userId,
         organization_id: organizationId,
       };
-    } catch (error) {
-      // If either INSERT fails, undo everything
-      await connection.rollback();
-
-      throw error;
-    } finally {
-      connection.release();
-    }
+    });
   }
     // =====================================================
   // FEATURE 11: Get One Organization
@@ -585,12 +538,10 @@ export class OrganizationsService {
 
       FROM organization o
 
-      INNER JOIN \`user\` u
+      INNER JOIN [user] u
         ON o.user_id = u.user_id
 
-      WHERE o.organization_id = ?
-
-      LIMIT 1;
+      WHERE o.organization_id = @0;
     `;
 
     const rows: any = await this.databaseService.query(
@@ -630,27 +581,19 @@ export class OrganizationsService {
       verification_status: string;
     },
   ) {
-    const connection =
-      await this.databaseService.getConnection();
-
-    try {
-      await connection.beginTransaction();
-
-      // Find the representative user_id
+    return this.databaseService.transaction(async (manager) => {
       const findOrganizationSql = `
-        SELECT
+        SELECT TOP 1
           organization_id,
           user_id
         FROM organization
-        WHERE organization_id = ?
-        LIMIT 1;
+        WHERE organization_id = @0;
       `;
 
-      const [organizationRows]: any =
-        await connection.execute(
-          findOrganizationSql,
-          [organizationId],
-        );
+      const organizationRows: any = await manager.query(
+        findOrganizationSql,
+        [organizationId],
+      );
 
       if (!organizationRows.length) {
         throw new BadRequestException(
@@ -660,20 +603,17 @@ export class OrganizationsService {
 
       const userId = organizationRows[0].user_id;
 
-      // Check if another user already uses the email
       const checkEmailSql = `
-        SELECT user_id
-        FROM \`user\`
-        WHERE email = ?
-          AND user_id <> ?
-        LIMIT 1;
+        SELECT TOP 1 user_id
+        FROM [user]
+        WHERE email = @0
+          AND user_id <> @1;
       `;
 
-      const [emailRows]: any =
-        await connection.execute(checkEmailSql, [
-          data.email,
-          userId,
-        ]);
+      const emailRows: any = await manager.query(checkEmailSql, [
+        data.email,
+        userId,
+      ]);
 
       if (emailRows.length > 0) {
         throw new ConflictException(
@@ -681,20 +621,17 @@ export class OrganizationsService {
         );
       }
 
-      // Check if another organization uses the license
       const checkLicenceSql = `
-        SELECT organization_id
+        SELECT TOP 1 organization_id
         FROM organization
-        WHERE licence_number = ?
-          AND organization_id <> ?
-        LIMIT 1;
+        WHERE licence_number = @0
+          AND organization_id <> @1;
       `;
 
-      const [licenceRows]: any =
-        await connection.execute(checkLicenceSql, [
-          data.licence_number,
-          organizationId,
-        ]);
+      const licenceRows: any = await manager.query(checkLicenceSql, [
+        data.licence_number,
+        organizationId,
+      ]);
 
       if (licenceRows.length > 0) {
         throw new ConflictException(
@@ -702,18 +639,17 @@ export class OrganizationsService {
         );
       }
 
-      // Update USER
       const updateUserSql = `
-        UPDATE \`user\`
+        UPDATE [user]
         SET
-          full_name = ?,
-          email = ?,
-          phone = ?,
-          address = ?
-        WHERE user_id = ?;
+          full_name = @0,
+          email = @1,
+          phone = @2,
+          address = @3
+        WHERE user_id = @4;
       `;
 
-      await connection.execute(updateUserSql, [
+      await manager.query(updateUserSql, [
         data.full_name,
         data.email,
         data.phone || null,
@@ -721,43 +657,32 @@ export class OrganizationsService {
         userId,
       ]);
 
-      // Update ORGANIZATION
       const updateOrganizationSql = `
         UPDATE organization
         SET
-          organization_name = ?,
-          organization_type = ?,
-          licence_number = ?,
-          organization_address = ?,
-          verification_status = ?
-        WHERE organization_id = ?;
+          organization_name = @0,
+          organization_type = @1,
+          licence_number = @2,
+          organization_address = @3,
+          verification_status = @4
+        WHERE organization_id = @5;
       `;
 
-      await connection.execute(
-        updateOrganizationSql,
-        [
-          data.organization_name,
-          data.organization_type,
-          data.licence_number,
-          data.organization_address || null,
-          data.verification_status,
-          organizationId,
-        ],
-      );
-
-      await connection.commit();
+      await manager.query(updateOrganizationSql, [
+        data.organization_name,
+        data.organization_type,
+        data.licence_number,
+        data.organization_address || null,
+        data.verification_status,
+        organizationId,
+      ]);
 
       return {
         message: 'Organization updated successfully',
         organization_id: organizationId,
         user_id: userId,
       };
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
-    }
+    });
   }
     // =====================================================
   // FEATURE 13: Delete Organization
@@ -770,32 +695,20 @@ export class OrganizationsService {
   // PARAMETERIZED RAW SQL
   // =====================================================
   async deleteOrganization(organizationId: number) {
-    const connection =
-      await this.databaseService.getConnection();
-
-    try {
-      await connection.beginTransaction();
-
-      // -------------------------------------------------
-      // RAW SQL 1:
-      // Find organization and its representative user
-      // -------------------------------------------------
-
+    return this.databaseService.transaction(async (manager) => {
       const findOrganizationSql = `
-        SELECT
+        SELECT TOP 1
           organization_id,
           user_id,
           organization_name
         FROM organization
-        WHERE organization_id = ?
-        LIMIT 1;
+        WHERE organization_id = @0;
       `;
 
-      const [organizationRows]: any =
-        await connection.execute(
-          findOrganizationSql,
-          [organizationId],
-        );
+      const organizationRows: any = await manager.query(
+        findOrganizationSql,
+        [organizationId],
+      );
 
       if (!organizationRows.length) {
         throw new BadRequestException(
@@ -803,131 +716,70 @@ export class OrganizationsService {
         );
       }
 
-      const organization =
-        organizationRows[0];
-
-      const userId =
-        organization.user_id;
-
-      // -------------------------------------------------
-      // RAW SQL 2:
-      // Check whether organization is being used
-      //
-      // Uses SUBQUERIES + COUNT
-      // -------------------------------------------------
+      const organization = organizationRows[0];
+      const userId = organization.user_id;
 
       const dependencyCheckSql = `
         SELECT
           (
             SELECT COUNT(*)
             FROM inventory
-            WHERE organization_id = ?
+            WHERE organization_id = @0
           ) AS inventory_count,
 
           (
             SELECT COUNT(*)
             FROM donation
-            WHERE receiving_organization_id = ?
+            WHERE receiving_organization_id = @1
           ) AS received_donation_count;
       `;
 
-      const [dependencyRows]: any =
-        await connection.execute(
-          dependencyCheckSql,
-          [
-            organizationId,
-            organizationId,
-          ],
-        );
+      const dependencyRows: any = await manager.query(
+        dependencyCheckSql,
+        [organizationId, organizationId],
+      );
 
-      const dependencies =
-        dependencyRows[0];
+      const dependencies = dependencyRows[0];
 
       if (
         Number(dependencies.inventory_count) > 0 ||
-        Number(
-          dependencies.received_donation_count,
-        ) > 0
+        Number(dependencies.received_donation_count) > 0
       ) {
         throw new BadRequestException(
           'Cannot delete this organization because it has related inventory or donation records',
         );
       }
 
-      // -------------------------------------------------
-      // RAW SQL 3:
-      // Check whether representative user is a donor
-      // -------------------------------------------------
-
       const donorCheckSql = `
         SELECT COUNT(*) AS donor_count
         FROM donation
-        WHERE donor_user_id = ?;
+        WHERE donor_user_id = @0;
       `;
 
-      const [donorRows]: any =
-        await connection.execute(
-          donorCheckSql,
-          [userId],
-        );
-
-      const donorCount =
-        Number(donorRows[0].donor_count);
-
-      // -------------------------------------------------
-      // RAW SQL 4:
-      // Delete ORGANIZATION first
-      //
-      // Must happen before deleting USER because
-      // organization.user_id references user.user_id
-      // -------------------------------------------------
+      const donorRows: any = await manager.query(donorCheckSql, [userId]);
+      const donorCount = Number(donorRows[0].donor_count);
 
       const deleteOrganizationSql = `
         DELETE FROM organization
-        WHERE organization_id = ?;
+        WHERE organization_id = @0;
       `;
 
-      await connection.execute(
-        deleteOrganizationSql,
-        [organizationId],
-      );
-
-      // -------------------------------------------------
-      // RAW SQL 5:
-      // Delete representative USER only if that user
-      // is not referenced as a donor
-      // -------------------------------------------------
+      await manager.query(deleteOrganizationSql, [organizationId]);
 
       if (donorCount === 0) {
         const deleteUserSql = `
-          DELETE FROM \`user\`
-          WHERE user_id = ?;
+          DELETE FROM [user]
+          WHERE user_id = @0;
         `;
 
-        await connection.execute(
-          deleteUserSql,
-          [userId],
-        );
+        await manager.query(deleteUserSql, [userId]);
       }
 
-      await connection.commit();
-
       return {
-        message:
-          'Organization deleted successfully',
-
-        organization_id:
-          organizationId,
-
-        deleted_representative:
-          donorCount === 0,
+        message: 'Organization deleted successfully',
+        organization_id: organizationId,
+        deleted_representative: donorCount === 0,
       };
-    } catch (error) {
-      await connection.rollback();
-
-      throw error;
-    } finally {
-      connection.release();
-    }
+    });
   }
 }
