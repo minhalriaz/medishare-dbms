@@ -15,21 +15,25 @@ import { DatabaseModule } from './database/database.module';
             isGlobal: true,
         }),
 
-        TypeOrmModule.forRoot({
-            type: 'mssql',
-            host: process.env.DB_HOST,
-            port: Number(process.env.DB_PORT),
-            username: process.env.DB_USERNAME,
-            password: process.env.DB_PASSWORD,
-            database: process.env.DB_DATABASE,
-            autoLoadEntities: true,
-            synchronize: false,
-            options: {
-                enableArithAbort: true,
-                trustServerCertificate: true,
-            },
-        }),
+       TypeOrmModule.forRoot({
+    type: 'mssql',
 
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT),
+
+    username: process.env.DB_USERNAME,
+    password: process.env.DB_PASSWORD,
+
+    database: process.env.DB_DATABASE,
+
+    autoLoadEntities: true,
+    synchronize: false,
+
+    options: {
+        trustServerCertificate: true,
+        enableArithAbort: true,
+    },
+}),
         DatabaseModule,
         DonationsModule,
         InventoryModule,
