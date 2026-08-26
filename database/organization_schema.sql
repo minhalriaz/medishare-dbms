@@ -1,5 +1,5 @@
-CREATE TABLE IF NOT EXISTS `user` (
-    user_id INT NOT NULL AUTO_INCREMENT,
+CREATE TABLE [user] (
+    user_id INT IDENTITY(1,1) NOT NULL,
     full_name VARCHAR(150) NOT NULL,
     email VARCHAR(150) NOT NULL,
     phone VARCHAR(30),
@@ -7,15 +7,15 @@ CREATE TABLE IF NOT EXISTS `user` (
     password_hash VARCHAR(255) NOT NULL,
     user_type VARCHAR(50) NOT NULL,
     account_status VARCHAR(50) NOT NULL DEFAULT 'Active',
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME NOT NULL DEFAULT GETDATE(),
 
-    PRIMARY KEY (user_id),
-    UNIQUE KEY uq_user_email (email)
+    CONSTRAINT PK_user PRIMARY KEY (user_id),
+    CONSTRAINT UQ_user_email UNIQUE (email)
 );
 
 
-CREATE TABLE IF NOT EXISTS organization (
-    organization_id INT NOT NULL AUTO_INCREMENT,
+CREATE TABLE organization (
+    organization_id INT IDENTITY(1,1) NOT NULL,
     user_id INT NOT NULL,
     organization_name VARCHAR(150) NOT NULL,
     organization_type VARCHAR(50) NOT NULL,
@@ -23,11 +23,12 @@ CREATE TABLE IF NOT EXISTS organization (
     organization_address VARCHAR(255),
     verification_status VARCHAR(50) NOT NULL DEFAULT 'Pending',
 
-    PRIMARY KEY (organization_id),
-    UNIQUE KEY uq_organization_licence (licence_number),
+    CONSTRAINT PK_organization PRIMARY KEY (organization_id),
 
-    
-    CONSTRAINT fk_organization_user
+    CONSTRAINT UQ_organization_licence 
+        UNIQUE (licence_number),
+
+    CONSTRAINT FK_organization_user
         FOREIGN KEY (user_id)
-        REFERENCES `user`(user_id)
+        REFERENCES [user](user_id)
 );
