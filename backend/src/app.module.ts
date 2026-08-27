@@ -9,6 +9,7 @@ import { InventoryModule } from './inventory/inventory.module';
 
 import { OrganizationsModule } from './organizations/organizations.module';
 import { DatabaseModule } from './database/database.module';
+import { UsersModule } from './users/users.module';
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -38,6 +39,7 @@ import { DatabaseModule } from './database/database.module';
         DonationsModule,
         InventoryModule,
         OrganizationsModule,
+        UsersModule
     ],
 
     controllers: [AppController],
