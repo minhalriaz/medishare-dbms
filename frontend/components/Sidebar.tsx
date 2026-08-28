@@ -19,9 +19,9 @@ const menuItems = [
   { name: 'Donations', icon: HeartHandshake, href: '/donations' },
   { name: 'Medicine Inventory', icon: Pill, href: '/inventory' },
   { name: 'Requests', icon: FileText, href: '#' },
-  { name: 'Organizations', icon: Building2, href: '#' },
-  { name: 'Users', icon: Users, href: '#' },
-  { name: 'Reports', icon: BarChart2, href: '#' },
+  { name: 'Organizations', icon: Building2, href: '/organizations' },
+  { name: 'Users', icon: Users, href: '/users' },
+  { name: 'Reports', icon: BarChart2, href: '/reports' },
   { name: 'Settings', icon: Settings, href: '#' },
 ];
 
