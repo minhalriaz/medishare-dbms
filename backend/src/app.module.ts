@@ -1,50 +1,64 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { DatabaseModule } from './database/database.module';
 import { DonationsModule } from './donations/donations.module';
 import { InventoryModule } from './inventory/inventory.module';
-
+import { MedicineRequestModule } from './medicine-request/medicine-request.module';
 import { OrganizationsModule } from './organizations/organizations.module';
-import { DatabaseModule } from './database/database.module';
-import { UsersModule } from './users/users.module';
 import { ReportsModule } from './reports/reports.module';
+import { UsersModule } from './users/users.module';
+
 @Module({
-    imports: [
-        ConfigModule.forRoot({
-            isGlobal: true,
-        }),
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const useSqlLogin = String(
+          configService.get<string>('DB_USE_SQL_LOGIN', 'false'),
+        )
+          .trim()
+          .toLowerCase() === 'true';
 
-       TypeOrmModule.forRoot({
-    type: 'mssql',
+        const dbUser = configService.get<string>('DB_USERNAME');
+        const dbPassword = configService.get<string>('DB_PASSWORD');
 
-    host: process.env.DB_HOST,
-    port: Number(process.env.DB_PORT),
-
-    username: process.env.DB_USERNAME,
-    password: process.env.DB_PASSWORD,
-
-    database: process.env.DB_DATABASE,
-
-    autoLoadEntities: true,
-    synchronize: false,
-
-    options: {
-        trustServerCertificate: true,
-        enableArithAbort: true,
-    },
-}),
-        DatabaseModule,
-        DonationsModule,
-        InventoryModule,
-        OrganizationsModule,
-        UsersModule,
-        ReportsModule
-    ],
-
-    controllers: [AppController],
-    providers: [AppService],
+        return {
+          type: 'mssql',
+          host: configService.get<string>('DB_HOST', 'localhost'),
+          port: Number(configService.get<string>('DB_PORT', '1433')),
+          database: configService.get<string>('DB_DATABASE', 'MediShareDB'),
+          ...(useSqlLogin && dbUser && dbPassword
+            ? { username: dbUser, password: dbPassword }
+            : {}),
+          autoLoadEntities: true,
+          synchronize: false,
+          options: {
+            encrypt: false,
+            trustServerCertificate: true,
+            enableArithAbort: true,
+            trustedConnection: !useSqlLogin,
+          },
+          driver: require('mssql/msnodesqlv8'),
+        };
+      },
+    }),
+    DatabaseModule,
+    DonationsModule,
+    InventoryModule,
+    MedicineRequestModule,
+    OrganizationsModule,
+    UsersModule,
+    ReportsModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}

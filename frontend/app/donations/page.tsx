@@ -33,7 +33,7 @@ export default function DonationsPage() {
       const data = await api.getDonations();// 🔴 CALLS BACKEND - GET
       setDonations(data);
     } catch (err) {
-      setError('Could not load donations. Make sure the backend is running on http://localhost:3000');
+      setError('Could not load donations. Make sure the backend is running on the configured API port.');
       setDonations([]);
     } finally {
       setLoading(false);
