@@ -8,9 +8,9 @@ import {
   StockSummaryItem,
   OrganizationDetails,
 } from '../types/organization';
+import { getApiBaseUrl } from '@/lib/apiBase';
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+const BASE_URL = getApiBaseUrl();
 
 async function request<T>(path: string): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`);

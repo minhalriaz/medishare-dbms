@@ -1,4 +1,6 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
+import { getApiBaseUrl } from '@/lib/apiBase';
+
+const API_URL = getApiBaseUrl();
 
 export interface UserRecord {
     user_id: number;
