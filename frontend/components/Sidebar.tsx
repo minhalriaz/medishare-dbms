@@ -18,11 +18,11 @@ const menuItems = [
   { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
   { name: 'Donations', icon: HeartHandshake, href: '/donations' },
   { name: 'Medicine Inventory', icon: Pill, href: '/inventory' },
-  { name: 'Requests', icon: FileText, href: '/requests' }, 
+  { name: 'Requests', icon: FileText, href: '#' },
   { name: 'Organizations', icon: Building2, href: '/organizations' },
   { name: 'Users', icon: Users, href: '/users' },
   { name: 'Reports', icon: BarChart2, href: '/reports' },
-  { name: 'Settings', icon: Settings, href: '#' }, 
+  { name: 'Settings', icon: Settings, href: '#' },
 ];
 
 export default function Sidebar() {

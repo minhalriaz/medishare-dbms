@@ -1,7 +1,6 @@
 import { Donation, CreateDonationDto, UpdateDonationDto } from '../types/donation';
-import { getApiBaseUrl } from '@/lib/apiBase';
 
-const BASE_URL = getApiBaseUrl();
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 // ─── Generic fetch helper ─────────────────────────────────────────────────────
 

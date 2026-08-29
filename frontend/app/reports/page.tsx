@@ -3,9 +3,8 @@
 import { useEffect, useState } from 'react';
 import { BarChart3, Database, RefreshCw } from 'lucide-react';
 import Sidebar from '@/components/Sidebar';
-import { getApiBaseUrl } from '@/lib/apiBase';
 
-const API_URL = getApiBaseUrl();
+const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000').replace(/\/$/, '');
 
 type Row = Record<string, unknown>;
 type ReportData = Record<string, Row[]>;
