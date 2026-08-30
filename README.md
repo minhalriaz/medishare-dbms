@@ -1,6 +1,14 @@
 # medishare-dbms
 An ERD-focused database system for managing medicine donations, verification, inventory, expiry tracking, recipient requests, and redistribution.
 
+## Request Item CRUD (Nazifa)
+
+The complete MySQL-backed Request Item CRUD is available at `http://localhost:3001/request-items`.
+
+- MySQL schema: `database/request_item_mysql.sql`
+- API: `GET/POST /request-items` and `GET/PATCH/DELETE /request-items/:id`
+- The UI performs real create, read, update and delete operations through the NestJS backend.
+
 ## Medicine Inventory Frontend Checkpoint
 
 A real API-connected Medicine Inventory CRUD screen is available at:
@@ -40,4 +48,3 @@ npm run dev -- -p 3001
 - `DELETE /inventory/:id`
 
 The Inventory UI does not use mock CRUD data. Create, view, edit, and delete actions call the NestJS backend directly, and successful mutations refresh the list from the backend.
-

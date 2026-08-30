@@ -19,6 +19,7 @@ const menuItems = [
   { name: 'Donations', icon: HeartHandshake, href: '/donations' },
   { name: 'Medicine Inventory', icon: Pill, href: '/inventory' },
   { name: 'Requests', icon: FileText, href: '/requests' }, 
+  { name: 'Request Items', icon: FileText, href: '/request-items' },
   { name: 'Organizations', icon: Building2, href: '/organizations' },
   { name: 'Users', icon: Users, href: '/users' },
   { name: 'Reports', icon: BarChart2, href: '/reports' },
