@@ -11,6 +11,7 @@ import { OrganizationsModule } from './organizations/organizations.module';
 import { DatabaseModule } from './database/database.module';
 import { UsersModule } from './users/users.module';
 import { ReportsModule } from './reports/reports.module';
+import { MedicineRequestModule } from './medicine-request/medicine-request.module';
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -41,7 +42,8 @@ import { ReportsModule } from './reports/reports.module';
         InventoryModule,
         OrganizationsModule,
         UsersModule,
-        ReportsModule
+        ReportsModule,
+        MedicineRequestModule
     ],
 
     controllers: [AppController],
