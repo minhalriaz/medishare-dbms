@@ -27,13 +27,13 @@ export class RequestItemService {
 
   private async validateForeignKeys(requestId: number, medicineId: number) {
     const requests = await this.database.query(
-      'SELECT request_id FROM medicine_request WHERE request_id = ? LIMIT 1',
+      'SELECT TOP 1 request_id FROM medicine_request WHERE request_id = @0',
       [requestId],
     );
     if (!requests.length) throw new BadRequestException(`Medicine request ID ${requestId} does not exist`);
 
     const medicines = await this.database.query(
-      'SELECT medicine_id FROM medicine WHERE medicine_id = ? LIMIT 1',
+      'SELECT TOP 1 medicine_id FROM medicine WHERE medicine_id = @0',
       [medicineId],
     );
     if (!medicines.length) throw new BadRequestException(`Medicine ID ${medicineId} does not exist`);
@@ -41,12 +41,13 @@ export class RequestItemService {
 
   async create(dto: CreateRequestItemDto) {
     await this.validateForeignKeys(dto.request_id, dto.medicine_id);
-    const result = await this.database.query(
+    const rows = await this.database.query(
       `INSERT INTO request_item (request_id, medicine_id, quantity, notes)
-       VALUES (?, ?, ?, ?)`,
+       OUTPUT inserted.request_item_id
+       VALUES (@0, @1, @2, @3)`,
       [dto.request_id, dto.medicine_id, dto.quantity, dto.notes?.trim() || null],
     );
-    return this.findOne(Number(result.insertId));
+    return this.findOne(rows[0].request_item_id);
   }
 
   findAll() {
@@ -72,7 +73,7 @@ export class RequestItemService {
 
   async findOne(id: number) {
     const rows = await this.database.query(
-      `${this.selectSql} WHERE ri.request_item_id = ?`,
+      `${this.selectSql} WHERE ri.request_item_id = @0`,
       [id],
     );
     if (!rows.length) throw new NotFoundException(`Request item ID ${id} not found`);
@@ -87,8 +88,8 @@ export class RequestItemService {
 
     await this.database.query(
       `UPDATE request_item
-       SET request_id = ?, medicine_id = ?, quantity = ?, notes = ?
-       WHERE request_item_id = ?`,
+       SET request_id = @0, medicine_id = @1, quantity = @2, notes = @3
+       WHERE request_item_id = @4`,
       [
         requestId,
         medicineId,
@@ -102,7 +103,7 @@ export class RequestItemService {
 
   async remove(id: number) {
     await this.findOne(id);
-    await this.database.query('DELETE FROM request_item WHERE request_item_id = ?', [id]);
+    await this.database.query('DELETE FROM request_item WHERE request_item_id = @0', [id]);
     return { message: `Request item ID ${id} deleted successfully` };
   }
 }

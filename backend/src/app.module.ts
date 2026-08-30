@@ -12,6 +12,7 @@ import { DatabaseModule } from './database/database.module';
 import { UsersModule } from './users/users.module';
 import { ReportsModule } from './reports/reports.module';
 import { MedicineRequestModule } from './medicine-request/medicine-request.module';
+import { RequestItemModule } from './request-item/request-item.module';
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -43,7 +44,8 @@ import { MedicineRequestModule } from './medicine-request/medicine-request.modul
         OrganizationsModule,
         UsersModule,
         ReportsModule,
-        MedicineRequestModule
+        MedicineRequestModule,
+        RequestItemModule
     ],
 
     controllers: [AppController],
