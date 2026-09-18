@@ -1,4 +1,7 @@
-export type InventoryStatus = 'Available' | 'Low Stock' | 'Out of Stock';
+export type InventoryStatus =
+  | 'Available'
+  | 'Low Stock'
+  | 'Out of Stock';
 
 export interface Inventory {
   inventory_id: number;
@@ -17,7 +20,8 @@ export interface InventoryPayload {
   received_quantity: number;
   available_quantity: number;
   storage_location: string;
-  inventory_status: string;
+  inventory_status?: string;
 }
 
-export type UpdateInventoryPayload = Partial<InventoryPayload>;
+export type UpdateInventoryPayload =
+  Partial<InventoryPayload>;

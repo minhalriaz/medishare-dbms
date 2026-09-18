@@ -45,20 +45,24 @@ export default function InventoryFormModal({
   useEffect(() => {
     if (!open) return;
 
-    if (mode === 'edit' && inventory) {
-      setForm({
-        organization_id: String(inventory.organization_id),
-        donation_item_id: String(inventory.donation_item_id),
-        received_quantity: String(inventory.received_quantity),
-        available_quantity: String(inventory.available_quantity),
-        storage_location: inventory.storage_location,
-        inventory_status: inventory.inventory_status || 'Available',
-      });
-    } else {
-      setForm(emptyForm);
-    }
+    const timeoutId = window.setTimeout(() => {
+      if (mode === 'edit' && inventory) {
+        setForm({
+          organization_id: String(inventory.organization_id),
+          donation_item_id: String(inventory.donation_item_id),
+          received_quantity: String(inventory.received_quantity),
+          available_quantity: String(inventory.available_quantity),
+          storage_location: inventory.storage_location,
+          inventory_status: inventory.inventory_status || 'Available',
+        });
+      } else {
+        setForm(emptyForm);
+      }
 
-    setErrors({});
+      setErrors({});
+    }, 0);
+
+    return () => window.clearTimeout(timeoutId);
   }, [open, mode, inventory]);
 
   if (!open) return null;
