@@ -14,8 +14,7 @@ export class ReportsController {
   @Get('organization-activity')
   organizationActivity() { return this.reportsService.organizationActivity(); }
 
-  @Get('donations-needing-attention')
-  donationsNeedingAttention() { return this.reportsService.donationsNeedingAttention(); }
+  
 
   @Get('high-volume-donations')
   highVolumeDonations() { return this.reportsService.highVolumeDonations(); }

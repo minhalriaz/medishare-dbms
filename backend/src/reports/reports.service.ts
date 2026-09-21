@@ -51,17 +51,7 @@ export class ReportsService {
       ORDER BY donation_count DESC, o.organization_name;
     `);
   }
-// 4. LEFT JOIN
-// Finds donations without any items.
-  donationsNeedingAttention() {
-    return this.dataSource.query(`
-      SELECT d.donation_id, d.donation_date, d.donation_status
-      FROM dbo.donation AS d
-      LEFT JOIN dbo.donation_item AS di ON d.donation_id = di.donation_id
-      WHERE di.donation_item_id IS NULL
-      ORDER BY d.donation_id;
-    `);
-  }
+
 
   // 5. INNER JOIN + SUM + GROUP BY + HAVING
 // Finds donations with quantity greater than 5.

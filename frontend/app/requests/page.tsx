@@ -81,7 +81,7 @@ export default function MedicineRequestsPage() {
       const data = await medicineRequestApi.getAll();
       setRequests(Array.isArray(data) ? data : []);
     } catch (requestError) {
-      // API ফেইল করলে অ্যাপ ক্র্যাশ না করে ফাঁকা অ্যারে সেট করবে এবং টোস্ট দিয়ে জানাবে
+     
       setRequests([]);
       showToast({
         type: 'error',

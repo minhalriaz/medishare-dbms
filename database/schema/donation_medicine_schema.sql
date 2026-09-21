@@ -3,7 +3,7 @@
 
 USE [MediShareDB];
 GO
-
+//medicine
 IF OBJECT_ID(N'dbo.medicine', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.medicine (
@@ -30,7 +30,7 @@ BEGIN
     ALTER TABLE dbo.medicine ADD prescription_required BIT NOT NULL CONSTRAINT DF_medicine_prescription_required DEFAULT (0);
 END
 GO
-
+//donation
 IF OBJECT_ID(N'dbo.donation', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.donation (
@@ -43,7 +43,7 @@ BEGIN
     );
 END
 GO
-
+//donation_item
 IF OBJECT_ID(N'dbo.donation_item', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.donation_item (

@@ -23,7 +23,6 @@ const sections: { title: string; reports: ReportDefinition[] }[] = [
     reports: [
       { key: 'donationSummary', title: 'Donation Summary', endpoint: 'donation-summary', description: 'Quantity and item totals for each donation.' },
       { key: 'organizationActivity', title: 'Organization Activity', endpoint: 'organization-activity', description: 'Donation activity across receiving organizations.' },
-      { key: 'donationsNeedingAttention', title: 'Donations Needing Attention', endpoint: 'donations-needing-attention', description: 'Donations that do not have medicine items yet.' },
     ],
   },
   {

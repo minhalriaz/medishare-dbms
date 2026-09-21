@@ -18,7 +18,7 @@ const menuItems = [
   { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
   { name: 'Donations', icon: HeartHandshake, href: '/donations' },
   { name: 'Medicine Inventory', icon: Pill, href: '/inventory' },
-  { name: 'Requests', icon: FileText, href: '/requests' }, 
+  { name: 'Medicine Requests', icon: FileText, href: '/requests' }, 
   { name: 'Request Items', icon: FileText, href: '/request-items' },
   { name: 'Organizations', icon: Building2, href: '/organizations' },
   { name: 'Users', icon: Users, href: '/users' },
