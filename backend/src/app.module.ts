@@ -13,6 +13,7 @@ import { UsersModule } from './users/users.module';
 import { ReportsModule } from './reports/reports.module';
 import { MedicineRequestModule } from './medicine-request/medicine-request.module';
 import { RequestItemModule } from './request-item/request-item.module';
+import { MedicineModule } from './medicine/medicine.module';
 
 import { VerificationModule } from './verification/verification.module';
 @Module({
@@ -47,6 +48,7 @@ import { VerificationModule } from './verification/verification.module';
         UsersModule,
         ReportsModule,
         MedicineRequestModule,
+        MedicineModule,
         VerificationModule,
         RequestItemModule
     ],

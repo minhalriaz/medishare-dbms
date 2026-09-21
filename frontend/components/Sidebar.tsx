@@ -18,6 +18,7 @@ import {
 const menuItems = [
   { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
   { name: 'Donations', icon: HeartHandshake, href: '/donations' },
+  { name: 'Medicine', icon: Pill, href: '/medicine' },
   { name: 'Medicine Inventory', icon: Pill, href: '/inventory' },
   { name: 'Verification', icon: ShieldCheck, href: '/verification' },
   { name: 'Requests', icon: FileText, href: '/requests' },
