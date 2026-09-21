@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   Pill,
   Settings,
+  ShieldCheck,
   Users,
 } from 'lucide-react';
 
@@ -18,12 +19,13 @@ const menuItems = [
   { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
   { name: 'Donations', icon: HeartHandshake, href: '/donations' },
   { name: 'Medicine Inventory', icon: Pill, href: '/inventory' },
-  { name: 'Medicine Requests', icon: FileText, href: '/requests' }, 
+  { name: 'Verification', icon: ShieldCheck, href: '/verification' },
+  { name: 'Requests', icon: FileText, href: '/requests' },
   { name: 'Request Items', icon: FileText, href: '/request-items' },
   { name: 'Organizations', icon: Building2, href: '/organizations' },
   { name: 'Users', icon: Users, href: '/users' },
   { name: 'Reports', icon: BarChart2, href: '/reports' },
-  { name: 'Settings', icon: Settings, href: '#' }, 
+  { name: 'Settings', icon: Settings, href: '#' },
 ];
 
 export default function Sidebar() {
@@ -36,10 +38,12 @@ export default function Sidebar() {
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm">
             <HandHeart className="h-6 w-6" />
           </div>
+
           <div>
             <h1 className="text-lg font-bold leading-tight text-gray-900">
               Medi<span className="text-emerald-600">Share</span>
             </h1>
+
             <p className="text-[10px] font-medium uppercase tracking-wider text-gray-400">
               Free Medicine Donation
             </p>
@@ -49,10 +53,12 @@ export default function Sidebar() {
         <nav className="mt-2 space-y-1 px-4">
           {menuItems.map((item) => {
             const Icon = item.icon;
+
             const active =
               item.href !== '#' &&
               (pathname === item.href ||
-                (item.href !== '/' && pathname.startsWith(`${item.href}/`)));
+                (item.href !== '/' &&
+                  pathname.startsWith(`${item.href}/`)));
 
             return (
               <Link
@@ -64,7 +70,12 @@ export default function Sidebar() {
                     : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                 }`}
               >
-                <Icon className={`h-5 w-5 ${active ? 'text-emerald-600' : 'text-gray-400'}`} />
+                <Icon
+                  className={`h-5 w-5 ${
+                    active ? 'text-emerald-600' : 'text-gray-400'
+                  }`}
+                />
+
                 {item.name}
               </Link>
             );
@@ -74,7 +85,10 @@ export default function Sidebar() {
 
       <div className="border-t border-gray-100 p-4">
         <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 p-4">
-          <p className="text-xs font-semibold text-emerald-800">MediShare Admin</p>
+          <p className="text-xs font-semibold text-emerald-800">
+            MediShare Admin
+          </p>
+
           <p className="mt-1 text-[11px] leading-4 text-emerald-700/70">
             Manage donations and medicine distribution from one place.
           </p>

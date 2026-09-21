@@ -13,6 +13,8 @@ import { UsersModule } from './users/users.module';
 import { ReportsModule } from './reports/reports.module';
 import { MedicineRequestModule } from './medicine-request/medicine-request.module';
 import { RequestItemModule } from './request-item/request-item.module';
+
+import { VerificationModule } from './verification/verification.module';
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -45,6 +47,7 @@ import { RequestItemModule } from './request-item/request-item.module';
         UsersModule,
         ReportsModule,
         MedicineRequestModule,
+        VerificationModule,
         RequestItemModule
     ],
 
