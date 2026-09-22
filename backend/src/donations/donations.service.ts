@@ -103,41 +103,114 @@ export class DonationsService {
   }
 
   async create(createDonationDto: CreateDonationDto) {
-    const { donation_items, ...donationFields } = createDonationDto;
+    const { donation_items = [], ...donationFields } = createDonationDto;
 
-    return this.dataSource.transaction(async (manager) => {
-      const donationIdRows = await manager.query(
-        `INSERT INTO donation (
+    const escapeSqlString = (value: string) => value.replace(/'/g, "''");
+
+    const donationItemSql = donation_items
+      .map((item) => {
+        const medicineId = Number(item.medicine_id);
+        const batchNumber = escapeSqlString(item.batch_number);
+        const manufacturingDate = escapeSqlString(item.manufacturing_date);
+        const expiryDate = escapeSqlString(item.expiry_date);
+        const packagingCondition = escapeSqlString(item.packaging_condition);
+        const storageCondition = escapeSqlString(item.storage_condition);
+
+        return `
+          IF NOT EXISTS (
+            SELECT 1
+            FROM medicine
+            WHERE medicine_id = ${medicineId}
+          )
+          BEGIN
+            THROW 50000, 'Medicine ${medicineId} does not exist', 1;
+          END;
+
+          INSERT INTO donation_item (
+            donation_id,
+            medicine_id,
+            batch_number,
+            quantity,
+            manufacturing_date,
+            expiry_date,
+            packaging_condition,
+            storage_condition
+          )
+          VALUES (
+            @donation_id,
+            ${medicineId},
+            N'${batchNumber}',
+            ${Number(item.quantity)},
+            CAST(N'${manufacturingDate}' AS DATE),
+            CAST(N'${expiryDate}' AS DATE),
+            N'${packagingCondition}',
+            N'${storageCondition}'
+          );`;
+      })
+      .join('\n');
+
+    const donationNote =
+      donationFields.donor_note === undefined || donationFields.donor_note === null
+        ? 'NULL'
+        : `N'${escapeSqlString(donationFields.donor_note)}'`;
+
+    const sql = `
+      BEGIN TRY
+        BEGIN TRANSACTION;
+
+        DECLARE @donation_id INT;
+        DECLARE @donation_row TABLE (donation_id INT);
+
+        INSERT INTO donation (
           donor_user_id,
           receiving_organization_id,
           donation_date,
           donation_status,
           donor_note
         )
-        OUTPUT inserted.donation_id AS donation_id
-        VALUES (@0, @1, @2, @3, @4)`,
-        [
-          donationFields.donor_user_id,
-          donationFields.receiving_organization_id,
-          donationFields.donation_date,
-          donationFields.donation_status,
-          donationFields.donor_note ?? null,
-        ],
-      );
+        OUTPUT inserted.donation_id INTO @donation_row(donation_id)
+        VALUES (
+          ${Number(donationFields.donor_user_id)},
+          ${Number(donationFields.receiving_organization_id)},
+          CAST(N'${escapeSqlString(String(donationFields.donation_date))}' AS DATE),
+          N'${escapeSqlString(donationFields.donation_status)}',
+          ${donationNote}
+        );
 
-      const createdDonationId = Number(donationIdRows?.[0]?.donation_id);
-      await this.insertDonationItems(manager, createdDonationId, donation_items || []);
+        SELECT @donation_id = donation_id FROM @donation_row;
 
-      const donationRows = await manager.query(
-        'SELECT * FROM donation WHERE donation_id = @0',
-        [createdDonationId],
-      );
+        ${donationItemSql}
 
-      const donation = donationRows[0];
-      donation.donation_items = await this.getDonationItems(createdDonationId, manager);
+        COMMIT TRANSACTION;
 
-      return donation;
-    });
+        SELECT
+          d.donation_id,
+          d.donor_user_id,
+          d.receiving_organization_id,
+          d.donation_date,
+          d.donation_status,
+          d.donor_note
+        FROM donation d
+        WHERE d.donation_id = @donation_id;
+      END TRY
+      BEGIN CATCH
+        IF @@TRANCOUNT > 0
+          ROLLBACK TRANSACTION;
+
+        DECLARE @error_message NVARCHAR(4000) = ERROR_MESSAGE();
+        THROW 50000, @error_message, 1;
+      END CATCH;
+    `;
+
+    const donationRows = await this.dataSource.query(sql);
+    const donation = donationRows?.[0];
+
+    if (!donation) {
+      throw new BadRequestException('Donation was not created.');
+    }
+
+    donation.donation_items = await this.getDonationItems(Number(donation.donation_id));
+    return donation;
   }
 
   async findAll() {
