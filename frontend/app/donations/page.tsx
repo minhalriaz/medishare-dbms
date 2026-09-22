@@ -19,12 +19,21 @@ import {
 } from 'lucide-react';
 
 export default function DonationsPage() {
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [donations, setDonations] = useState<Donation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+
+  useEffect(() => {
+    const storedMessage = sessionStorage.getItem('donationSuccessMessage');
+    if (storedMessage) {
+      setSuccessMessage(storedMessage);
+      sessionStorage.removeItem('donationSuccessMessage');
+    }
+  }, []);
 
   const fetchDonations = async () => {
     setLoading(true);
@@ -81,6 +90,12 @@ export default function DonationsPage() {
 
       <main className="flex-1 ml-64 p-8">
         {/* Header */}
+        {successMessage && (
+          <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+            {successMessage}
+          </div>
+        )}
+
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Donations</h1>

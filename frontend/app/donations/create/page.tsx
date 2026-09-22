@@ -24,6 +24,7 @@ export default function CreateDonationPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const [donor_user_id, setDonorUserId] = useState<number | ''>('');
   const [receiving_organization_id, setReceivingOrgId] = useState<number | ''>('');
@@ -51,9 +52,9 @@ export default function CreateDonationPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
     setLoading(true);
 
-//backend
     try {
       await api.createDonation({
         donor_user_id: Number(donor_user_id),
@@ -63,9 +64,20 @@ export default function CreateDonationPage() {
         donor_note: donor_note || undefined,
         donation_items: medicineItems,
       });
+
+      const successMessage = 'Donation created successfully. Transaction committed.';
+      setSuccess(successMessage);
+      sessionStorage.setItem('donationSuccessMessage', successMessage);
       router.push('/donations');
     } catch (err: any) {
-      setError(err?.message ?? 'Failed to create donation. Check your input and try again.');
+      const backendMessage =
+        typeof err?.message === 'string'
+          ? err.message.replace(/^API\s+\d+:\s*/i, '')
+          : 'Failed to create donation. Check your input and try again.';
+
+      setError(
+        `Donation failed. The transaction was rolled back and no partial donation was saved. ${backendMessage}`,
+      );
     } finally {
       setLoading(false);
     }
@@ -87,7 +99,12 @@ export default function CreateDonationPage() {
           <h1 className="text-2xl font-bold text-gray-800">Create New Donation</h1>
         </div>
 
-        {/* Error Banner */}
+        {success && (
+          <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+            {success}
+          </div>
+        )}
+
         {error && (
           <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-rose-500 mt-0.5 flex-shrink-0" />
