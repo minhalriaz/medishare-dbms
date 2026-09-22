@@ -14,7 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { medicineApi } from '@/services/medicineApi';
-import { CreateMedicinePayload, Medicine } from '@/types/medicine';
+import { CreateMedicinePayload, Medicine, MedicineAuditRecord } from '@/types/medicine';
 
 type ToastState = {
   type: 'success' | 'error';
@@ -49,6 +49,28 @@ function formatDisplay(value?: string | null) {
   return value;
 }
 
+function formatAuditDate(value?: string | Date | null) {
+  if (!value) {
+    return '—';
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  return date.toLocaleString();
+}
+
+function formatAuditBoolean(value?: boolean | null) {
+  if (value === null || value === undefined) {
+    return '—';
+  }
+
+  return value ? 'Yes' : 'No';
+}
+
 export default function MedicinePage() {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,6 +82,10 @@ export default function MedicinePage() {
   const [submitting, setSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Medicine | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [auditOpen, setAuditOpen] = useState(false);
+  const [auditRecords, setAuditRecords] = useState<MedicineAuditRecord[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditError, setAuditError] = useState('');
   const [toast, setToast] = useState<ToastState>(null);
 
   const showToast = useCallback((nextToast: ToastState) => {
@@ -189,9 +215,28 @@ export default function MedicinePage() {
     }
   };
 
+  const fetchAuditHistory = useCallback(async () => {
+    setAuditLoading(true);
+    setAuditError('');
+
+    try {
+      const data = await medicineApi.getAuditHistory();
+      setAuditRecords(Array.isArray(data) ? data : []);
+    } catch (requestError) {
+      setAuditError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Unable to load medicine audit history.',
+      );
+      setAuditRecords([]);
+    } finally {
+      setAuditLoading(false);
+    }
+  }, []);
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen w-full min-w-0 bg-slate-50">
+      <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <header className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div className="flex items-start gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 shadow-sm ring-1 ring-emerald-100">
@@ -266,6 +311,110 @@ export default function MedicinePage() {
               {filteredMedicines.length} medicine{filteredMedicines.length === 1 ? '' : 's'}
             </div>
           </div>
+        </section>
+
+        <section className="mb-6 w-full min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-600">
+                Audit History
+              </p>
+              <h2 className="mt-1 text-lg font-semibold text-slate-900">Medicine change log</h2>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void fetchAuditHistory()}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${auditLoading ? 'animate-spin' : ''}`} />
+                Refresh Audit
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAuditOpen((current) => !current)}
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
+              >
+                {auditOpen ? 'Hide History' : 'Show History'}
+              </button>
+            </div>
+          </div>
+
+          {auditOpen && (
+            <div className="mt-4 w-full min-w-0">
+              {auditLoading ? (
+                <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Loading medicine audit history...
+                </div>
+              ) : auditError ? (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  {auditError}
+                </div>
+              ) : auditRecords.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                  No medicine audit records found yet.
+                </div>
+              ) : (
+                <div className="w-full min-w-0 overflow-x-auto rounded-xl border border-slate-200">
+                  <table className="min-w-[1280px] divide-y divide-slate-200 text-left text-xs">
+                    <thead className="bg-slate-50 text-slate-600">
+                      <tr>
+                        <th className="px-3 py-2 font-semibold">Medicine</th>
+                        <th className="px-3 py-2 font-semibold">Action</th>
+                        <th className="px-3 py-2 font-semibold">Changed At</th>
+                        <th className="px-3 py-2 font-semibold">Changed By</th>
+                        <th className="px-3 py-2 font-semibold">Old Name</th>
+                        <th className="px-3 py-2 font-semibold">New Name</th>
+                        <th className="px-3 py-2 font-semibold">Old Strength</th>
+                        <th className="px-3 py-2 font-semibold">New Strength</th>
+                        <th className="px-3 py-2 font-semibold">Old Generic</th>
+                        <th className="px-3 py-2 font-semibold">New Generic</th>
+                        <th className="px-3 py-2 font-semibold">Old Manufacturer</th>
+                        <th className="px-3 py-2 font-semibold">New Manufacturer</th>
+                        <th className="px-3 py-2 font-semibold">Old Dosage</th>
+                        <th className="px-3 py-2 font-semibold">New Dosage</th>
+                        <th className="px-3 py-2 font-semibold">Old Category</th>
+                        <th className="px-3 py-2 font-semibold">New Category</th>
+                        <th className="px-3 py-2 font-semibold">Old Rx</th>
+                        <th className="px-3 py-2 font-semibold">New Rx</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 bg-white text-slate-700">
+                      {auditRecords.map((record) => (
+                        <tr key={record.audit_id} className="align-top">
+                          <td className="px-3 py-2 font-medium text-slate-900">#{record.medicine_id}</td>
+                          <td className="px-3 py-2">
+                            <span className="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-700 ring-1 ring-emerald-200">
+                              {record.action_type}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2">{formatAuditDate(record.changed_at)}</td>
+                          <td className="px-3 py-2">{formatDisplay(record.changed_by)}</td>
+                          <td className="px-3 py-2">{formatDisplay(record.medicine_name_old)}</td>
+                          <td className="px-3 py-2">{formatDisplay(record.medicine_name_new)}</td>
+                          <td className="px-3 py-2">{formatDisplay(record.strength_old)}</td>
+                          <td className="px-3 py-2">{formatDisplay(record.strength_new)}</td>
+                          <td className="px-3 py-2">{formatDisplay(record.generic_name_old)}</td>
+                          <td className="px-3 py-2">{formatDisplay(record.generic_name_new)}</td>
+                          <td className="px-3 py-2">{formatDisplay(record.manufacturer_old)}</td>
+                          <td className="px-3 py-2">{formatDisplay(record.manufacturer_new)}</td>
+                          <td className="px-3 py-2">{formatDisplay(record.dosage_form_old)}</td>
+                          <td className="px-3 py-2">{formatDisplay(record.dosage_form_new)}</td>
+                          <td className="px-3 py-2">{formatDisplay(record.medicine_category_old)}</td>
+                          <td className="px-3 py-2">{formatDisplay(record.medicine_category_new)}</td>
+                          <td className="px-3 py-2">{formatAuditBoolean(record.prescription_required_old)}</td>
+                          <td className="px-3 py-2">{formatAuditBoolean(record.prescription_required_new)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         {error && (

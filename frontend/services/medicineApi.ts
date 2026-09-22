@@ -1,4 +1,9 @@
-import { CreateMedicinePayload, Medicine, UpdateMedicinePayload } from '@/types/medicine';
+import {
+  CreateMedicinePayload,
+  Medicine,
+  MedicineAuditRecord,
+  UpdateMedicinePayload,
+} from '@/types/medicine';
 
 const API_BASE_URL = (
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'
@@ -43,6 +48,11 @@ export const medicineApi = {
   getAll: () => request<Medicine[]>('/medicine'),
 
   getById: (id: number) => request<Medicine>(`/medicine/${id}`),
+
+  getAuditHistory: (medicineId?: number) => {
+    const query = medicineId !== undefined ? `?medicine_id=${encodeURIComponent(String(medicineId))}` : '';
+    return request<MedicineAuditRecord[]>(`/medicine/audit${query}`);
+  },
 
   create: (payload: CreateMedicinePayload) =>
     request<Medicine>('/medicine', {
