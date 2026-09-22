@@ -19,4 +19,10 @@ export class Medicine {
 
     @Column({ length: 100, nullable: true })
     strength: string;
+
+    @Column({ length: 100, nullable: true })
+    medicine_category: string;
+
+    @Column({ default: false })
+    prescription_required: boolean;
 }

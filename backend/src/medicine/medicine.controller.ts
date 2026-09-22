@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 
 import { MedicineService } from './medicine.service';
@@ -33,6 +34,20 @@ export class MedicineController {
   @Get()
   findAll() {
     return this.medicineService.findAll();
+  }
+
+  // ==========================================
+  // READ AUDIT HISTORY
+  // ==========================================
+
+  @Get('audit')
+  getAuditHistory(@Query('medicine_id') medicineId?: string) {
+    const parsedMedicineId =
+      medicineId === undefined || medicineId === null || medicineId === ''
+        ? undefined
+        : Number(medicineId);
+
+    return this.medicineService.getAuditHistory(parsedMedicineId);
   }
 
   // ==========================================

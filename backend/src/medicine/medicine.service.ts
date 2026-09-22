@@ -41,6 +41,53 @@ export class MedicineService {
   }
 
   // ==========================================
+  // READ AUDIT HISTORY
+  // ==========================================
+
+  async getAuditHistory(medicineId?: number) {
+    if (
+      medicineId !== undefined &&
+      (Number.isNaN(medicineId) || !Number.isInteger(medicineId) || medicineId < 1)
+    ) {
+      throw new BadRequestException('Medicine ID must be a valid positive integer');
+    }
+
+    const params: any[] = [];
+    let query = `
+      SELECT
+        audit_id,
+        medicine_id,
+        action_type,
+        changed_at,
+        changed_by,
+        medicine_name_old,
+        medicine_name_new,
+        generic_name_old,
+        generic_name_new,
+        manufacturer_old,
+        manufacturer_new,
+        dosage_form_old,
+        dosage_form_new,
+        strength_old,
+        strength_new,
+        medicine_category_old,
+        medicine_category_new,
+        prescription_required_old,
+        prescription_required_new
+      FROM dbo.medicine_audit
+    `;
+
+    if (medicineId !== undefined) {
+      query += ` WHERE medicine_id = @0`;
+      params.push(medicineId);
+    }
+
+    query += ` ORDER BY changed_at DESC, audit_id DESC`;
+
+    return await this.dataSource.query(query, params);
+  }
+
+  // ==========================================
   // READ ONE
   // ==========================================
 
