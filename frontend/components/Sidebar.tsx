@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   BarChart2,
+  Bot,
   Building2,
   FileText,
   HandHeart,
@@ -17,6 +18,7 @@ import {
 
 const menuItems = [
   { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
+  { name: 'AI Assistant', icon: Bot, href: '/rag' },
   { name: 'Donations', icon: HeartHandshake, href: '/donations' },
   { name: 'Medicine', icon: Pill, href: '/medicine' },
   { name: 'Medicine Inventory', icon: Pill, href: '/inventory' },

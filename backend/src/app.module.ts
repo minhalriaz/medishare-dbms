@@ -17,6 +17,7 @@ import { MedicineModule } from './medicine/medicine.module';
 
 import { VerificationModule } from './verification/verification.module';
 import { DistributionModule } from './distribution/distribution.module';
+import { RagModule } from './rag/rag.module';
 
 @Module({
     imports: [
@@ -55,6 +56,7 @@ import { DistributionModule } from './distribution/distribution.module';
         VerificationModule,
         RequestItemModule,
         DistributionModule,
+        RagModule,
     ],
 
     controllers: [AppController],
