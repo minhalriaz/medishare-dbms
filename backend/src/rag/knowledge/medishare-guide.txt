@@ -1,0 +1,11 @@
+MediShare is a free medicine donation and distribution platform.
+
+Donors can donate available medicines through the platform. Donated medicines can be reviewed and verified before they are made available for distribution.
+
+Organizations can manage medicine inventory and track received and available quantities.
+
+Medicine requests allow organizations or authorized users to request medicines based on their needs.
+
+Medicine verification records contain information about the donation item, the person who performed the verification, the verification result, and verification remarks.
+
+The MediShare system maintains information about medicines, donations, inventory, organizations, users, requests, and verification records.
