@@ -16,31 +16,34 @@ import { RequestItemModule } from './request-item/request-item.module';
 import { MedicineModule } from './medicine/medicine.module';
 
 import { VerificationModule } from './verification/verification.module';
+import { DistributionModule } from './distribution/distribution.module';
+
 @Module({
     imports: [
         ConfigModule.forRoot({
             isGlobal: true,
         }),
 
-       TypeOrmModule.forRoot({
-    type: 'mssql',
+        TypeOrmModule.forRoot({
+            type: 'mssql',
 
-    host: process.env.DB_HOST,
-    port: Number(process.env.DB_PORT),
+            host: process.env.DB_HOST,
+            port: Number(process.env.DB_PORT),
 
-    username: process.env.DB_USERNAME,
-    password: process.env.DB_PASSWORD,
+            username: process.env.DB_USERNAME,
+            password: process.env.DB_PASSWORD,
 
-    database: process.env.DB_DATABASE,
+            database: process.env.DB_DATABASE,
 
-    autoLoadEntities: true,
-    synchronize: false,
+            autoLoadEntities: true,
+            synchronize: false,
 
-    options: {
-        trustServerCertificate: true,
-        enableArithAbort: true,
-    },
-}),
+            options: {
+                trustServerCertificate: true,
+                enableArithAbort: true,
+            },
+        }),
+
         DatabaseModule,
         DonationsModule,
         InventoryModule,
@@ -50,7 +53,8 @@ import { VerificationModule } from './verification/verification.module';
         MedicineRequestModule,
         MedicineModule,
         VerificationModule,
-        RequestItemModule
+        RequestItemModule,
+        DistributionModule,
     ],
 
     controllers: [AppController],

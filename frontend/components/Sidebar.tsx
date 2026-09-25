@@ -21,6 +21,7 @@ const menuItems = [
   { name: 'Medicine', icon: Pill, href: '/medicine' },
   { name: 'Medicine Inventory', icon: Pill, href: '/inventory' },
   { name: 'Verification', icon: ShieldCheck, href: '/verification' },
+  { name: 'Distributions', icon: HeartHandshake, href: '/distributions' },
   { name: 'Requests', icon: FileText, href: '/requests' },
   { name: 'Request Items', icon: FileText, href: '/request-items' },
   { name: 'Organizations', icon: Building2, href: '/organizations' },
