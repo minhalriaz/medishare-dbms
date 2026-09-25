@@ -67,6 +67,10 @@ export default function MedicineRequestsPage() {
   const [deleteTarget, setDeleteTarget] = useState<MedicineRequest | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
+  const [requestSummaryRows, setRequestSummaryRows] = useState<Record<string, unknown>[]>([]);
+  const [demandRows, setDemandRows] = useState<Record<string, unknown>[]>([]);
+  const [statusOverviewRows, setStatusOverviewRows] = useState<Record<string, unknown>[]>([]);
+  const [organizationOverviewRows, setOrganizationOverviewRows] = useState<Record<string, unknown>[]>([]);
 
   const showToast = useCallback((nextToast: ToastState) => {
     setToast(nextToast);
@@ -81,7 +85,6 @@ export default function MedicineRequestsPage() {
       const data = await medicineRequestApi.getAll();
       setRequests(Array.isArray(data) ? data : []);
     } catch (requestError) {
-     
       setRequests([]);
       showToast({
         type: 'error',
@@ -92,9 +95,35 @@ export default function MedicineRequestsPage() {
     }
   }, [showToast]);
 
+  const fetchRequestReports = useCallback(async () => {
+    try {
+      const [summary, demand, statusOverview, organizationOverview] = await Promise.all([
+        medicineRequestApi.getRequestSummary(),
+        medicineRequestApi.getMedicineDemandOverview(),
+        medicineRequestApi.getRequestStatusOverview(),
+        medicineRequestApi.getOrganizationRequestOverview(),
+      ]);
+
+      setRequestSummaryRows(Array.isArray(summary) ? summary : []);
+      setDemandRows(Array.isArray(demand) ? demand : []);
+      setStatusOverviewRows(Array.isArray(statusOverview) ? statusOverview : []);
+      setOrganizationOverviewRows(Array.isArray(organizationOverview) ? organizationOverview : []);
+    } catch (requestError) {
+      showToast({
+        type: 'error',
+        message: requestError instanceof Error ? requestError.message : 'Failed to load medicine request reports.',
+      });
+      setRequestSummaryRows([]);
+      setDemandRows([]);
+      setStatusOverviewRows([]);
+      setOrganizationOverviewRows([]);
+    }
+  }, [showToast]);
+
   useEffect(() => {
-    fetchRequests();
-  }, [fetchRequests]);
+    void fetchRequests();
+    void fetchRequestReports();
+  }, [fetchRequests, fetchRequestReports]);
 
   const summary = useMemo(() => {
     return requests.reduce(
@@ -153,7 +182,7 @@ export default function MedicineRequestsPage() {
       await medicineRequestApi.remove(deleteTarget.request_id);
       showToast({ type: 'success', message: 'Medicine request deleted successfully.' });
       setDeleteTarget(null);
-      await fetchRequests();
+      await Promise.all([fetchRequests(), fetchRequestReports()]);
     } catch (requestError) {
       showToast({
         type: 'error',
@@ -287,6 +316,32 @@ export default function MedicineRequestsPage() {
               </div>
             )}
           </section>
+
+          <div className="mt-8 space-y-6">
+            <QueryResultPanel
+              title="Request Summary"
+              description="Request ID, requester details, requested organization, priority, status, date, and total requested items."
+              rows={requestSummaryRows}
+            />
+
+            <QueryResultPanel
+              title="Medicine Demand Overview"
+              description="Medicine demand aggregated by medicine ID, name, generic name, and requested quantity."
+              rows={demandRows}
+            />
+
+            <QueryResultPanel
+              title="Request Status Overview"
+              description="Each request status and the number of requests currently in that status."
+              rows={statusOverviewRows}
+            />
+
+            <QueryResultPanel
+              title="Organization Request Overview"
+              description="Organization totals for how many medicine requests were submitted to each organization."
+              rows={organizationOverviewRows}
+            />
+          </div>
         </div>
       </main>
 
@@ -298,7 +353,7 @@ export default function MedicineRequestsPage() {
           onClose={() => setFormOpen(false)}
           onSuccess={async () => {
             setFormOpen(false);
-            await fetchRequests();
+            await Promise.all([fetchRequests(), fetchRequestReports()]);
             showToast({ type: 'success', message: formMode === 'create' ? 'Request added successfully.' : 'Request updated successfully.' });
           }}
           onError={(msg) => showToast({ type: 'error', message: msg })}
@@ -616,6 +671,58 @@ function RequestFormModal({
         </form>
       </div>
     </div>
+  );
+}
+
+function QueryResultPanel({
+  title,
+  description,
+  rows,
+}: {
+  title: string;
+  description: string;
+  rows: Record<string, unknown>[];
+}) {
+  const columns = rows.length > 0 ? Object.keys(rows[0] as Record<string, unknown>) : [];
+
+  return (
+    <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="mb-4">
+        <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+        <p className="mt-1 text-sm text-gray-600">{description}</p>
+      </div>
+
+      {rows.length === 0 ? (
+        <p className="mt-5 rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
+          No rows returned for this query.
+        </p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full border-collapse text-left text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 bg-slate-100 text-[11px] font-bold uppercase tracking-wide text-gray-700">
+                {columns.map((column) => (
+                  <th key={column} className="px-4 py-3">
+                    {column.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {rows.map((row, index) => (
+                <tr key={`${title}-${index}`} className="hover:bg-emerald-50/20">
+                  {columns.map((column) => (
+                    <td key={`${column}-${index}`} className="px-4 py-3 text-gray-700">
+                      {String((row as Record<string, unknown>)[column] ?? '—')}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }
 

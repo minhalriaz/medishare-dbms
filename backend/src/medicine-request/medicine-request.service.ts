@@ -286,4 +286,77 @@ export class MedicineRequestService {
       return { message: `Medicine request with ID ${id} deleted successfully` };
     });
   }
+
+  getRequestSummary() {
+    return this.dataSource.query(`
+      SELECT
+        mr.request_id,
+        u.full_name AS requester_name,
+        o.organization_name AS requested_organization,
+        mr.priority_level,
+        mr.request_status,
+        mr.request_date,
+        COALESCE(SUM(ri.quantity), 0) AS total_requested_items
+      FROM medicine_request mr
+      INNER JOIN [user] u
+        ON u.user_id = mr.requester_user_id
+      INNER JOIN organization o
+        ON o.organization_id = mr.requested_from_organization_id
+      LEFT JOIN request_item ri
+        ON ri.request_id = mr.request_id
+      GROUP BY
+        mr.request_id,
+        u.full_name,
+        o.organization_name,
+        mr.priority_level,
+        mr.request_status,
+        mr.request_date
+      ORDER BY mr.request_id DESC;
+    `);
+  }
+
+  getMedicineDemandOverview() {
+    return this.dataSource.query(`
+      SELECT
+        ri.medicine_id,
+        m.medicine_name,
+        m.generic_name,
+        SUM(ri.quantity) AS total_requested_quantity
+      FROM request_item ri
+      INNER JOIN medicine m
+        ON m.medicine_id = ri.medicine_id
+      GROUP BY
+        ri.medicine_id,
+        m.medicine_name,
+        m.generic_name
+      ORDER BY total_requested_quantity DESC, ri.medicine_id;
+    `);
+  }
+
+  getRequestStatusOverview() {
+    return this.dataSource.query(`
+      SELECT
+        mr.request_status AS status_name,
+        COUNT(*) AS total_requests
+      FROM medicine_request mr
+      GROUP BY mr.request_status
+      ORDER BY total_requests DESC, mr.request_status;
+    `);
+  }
+
+  getOrganizationRequestOverview() {
+    return this.dataSource.query(`
+      SELECT
+        o.organization_id,
+        o.organization_name,
+        COUNT(mr.request_id) AS total_requests
+      FROM organization o
+      LEFT JOIN medicine_request mr
+        ON mr.requested_from_organization_id = o.organization_id
+      GROUP BY
+        o.organization_id,
+        o.organization_name
+      ORDER BY total_requests DESC, o.organization_id;
+    `);
+  }
 }

@@ -62,6 +62,10 @@ export default function DistributionsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Distribution | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
+  const [coverageRows, setCoverageRows] = useState<Record<string, unknown>[]>([]);
+  const [outstandingRows, setOutstandingRows] = useState<Record<string, unknown>[]>([]);
+  const [statusRows, setStatusRows] = useState<Record<string, unknown>[]>([]);
+  const [matrixRows, setMatrixRows] = useState<Record<string, unknown>[]>([]);
 
   const showToast = useCallback((nextToast: ToastState) => {
     setToast(nextToast);
@@ -90,9 +94,38 @@ export default function DistributionsPage() {
     }
   }, [showToast]);
 
+  const fetchDistributionQueryResults = useCallback(async () => {
+    try {
+      const [coverage, outstanding, statusUnion, organizationMatrix] = await Promise.all([
+        distributionApi.getCoverage(),
+        distributionApi.getOutstanding(),
+        distributionApi.getStatusUnion(),
+        distributionApi.getOrganizationMatrix(),
+      ]);
+
+      setCoverageRows(Array.isArray(coverage) ? coverage : []);
+      setOutstandingRows(Array.isArray(outstanding) ? outstanding : []);
+      setStatusRows(Array.isArray(statusUnion) ? statusUnion : []);
+      setMatrixRows(Array.isArray(organizationMatrix) ? organizationMatrix : []);
+    } catch (error) {
+      showToast({
+        type: 'error',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to load distribution query results.',
+      });
+      setCoverageRows([]);
+      setOutstandingRows([]);
+      setStatusRows([]);
+      setMatrixRows([]);
+    }
+  }, [showToast]);
+
   useEffect(() => {
-    fetchDistributions();
-  }, [fetchDistributions]);
+    void fetchDistributions();
+    void fetchDistributionQueryResults();
+  }, [fetchDistributions, fetchDistributionQueryResults]);
 
   const summary = useMemo(() => {
     return distributions.reduce(
@@ -135,7 +168,7 @@ export default function DistributionsPage() {
       await distributionApi.remove(deleteTarget.distribution_id);
       showToast({ type: 'success', message: 'Distribution deleted successfully.' });
       setDeleteTarget(null);
-      await fetchDistributions();
+      await Promise.all([fetchDistributions(), fetchDistributionQueryResults()]);
     } catch (error) {
       showToast({
         type: 'error',
@@ -306,6 +339,32 @@ export default function DistributionsPage() {
               </div>
             )}
           </section>
+
+          <div className="mt-8 space-y-6">
+            <QueryResultPanel
+              title="Distribution Coverage"
+              description="Approved requests that already have a matching distribution record."
+              rows={coverageRows}
+            />
+
+            <QueryResultPanel
+              title="Outstanding Medicine Requests"
+              description="Pending or approved requests without a completed or in-transit distribution record."
+              rows={outstandingRows}
+            />
+
+            <QueryResultPanel
+              title="Request & Distribution Status"
+              description="Combined status view across request and distribution records."
+              rows={statusRows}
+            />
+
+            <QueryResultPanel
+              title="Organization Distribution Matrix"
+              description="Distribution records linked to requesting and distributing organizations."
+              rows={matrixRows}
+            />
+          </div>
         </div>
       </main>
 
@@ -315,7 +374,7 @@ export default function DistributionsPage() {
           onClose={() => setFormOpen(false)}
           onSuccess={async () => {
             setFormOpen(false);
-            await fetchDistributions();
+            await Promise.all([fetchDistributions(), fetchDistributionQueryResults()]);
             showToast({
               type: 'success',
               message: editingDistribution
@@ -390,6 +449,59 @@ function SummaryCard({
         </div>
       </div>
     </div>
+  );
+}
+
+function QueryResultPanel({
+  title,
+  description,
+  rows,
+}: {
+  title: string;
+  description: string;
+  rows: Record<string, unknown>[];
+}) {
+  const columns = rows.length > 0 ? Object.keys(rows[0] as Record<string, unknown>) : [];
+
+  return (
+    <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="mb-4">
+        <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+        <p className="mt-1 text-sm text-gray-600">{description}</p>
+      </div>
+
+      {rows.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-500">
+          No rows returned for this query.
+        </p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full border-collapse text-left text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 bg-slate-100 text-[11px] font-bold uppercase tracking-wide text-gray-700">
+                {columns.map((column) => (
+                  <th key={column} className="px-4 py-3">
+                    {column.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-gray-200">
+              {rows.map((row, index) => (
+                <tr key={`${title}-${index}`} className="hover:bg-emerald-50/20">
+                  {columns.map((column) => (
+                    <td key={`${column}-${index}`} className="px-4 py-3 text-gray-700">
+                      {String((row as Record<string, unknown>)[column] ?? '—')}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }
 
