@@ -29,6 +29,22 @@ export const medicineRequestApi = {
     return [];
   },
 
+  async getRequestSummary(): Promise<any[]> {
+    return request<any[]>('/request-summary');
+  },
+
+  async getMedicineDemandOverview(): Promise<any[]> {
+    return request<any[]>('/medicine-demand-overview');
+  },
+
+  async getRequestStatusOverview(): Promise<any[]> {
+    return request<any[]>('/request-status-overview');
+  },
+
+  async getOrganizationRequestOverview(): Promise<any[]> {
+    return request<any[]>('/organization-request-overview');
+  },
+
   async create(payload: CreateMedicineRequestPayload): Promise<MedicineRequest> {
     return request<MedicineRequest>('', {
       method: 'POST',

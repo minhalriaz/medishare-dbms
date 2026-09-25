@@ -26,6 +26,26 @@ export class MedicineRequestController {
     return this.medicineRequestService.findAll();
   }
 
+  @Get('request-summary')
+  getRequestSummary() {
+    return this.medicineRequestService.getRequestSummary();
+  }
+
+  @Get('medicine-demand-overview')
+  getMedicineDemandOverview() {
+    return this.medicineRequestService.getMedicineDemandOverview();
+  }
+
+  @Get('request-status-overview')
+  getRequestStatusOverview() {
+    return this.medicineRequestService.getRequestStatusOverview();
+  }
+
+  @Get('organization-request-overview')
+  getOrganizationRequestOverview() {
+    return this.medicineRequestService.getOrganizationRequestOverview();
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.medicineRequestService.findOne(id);
