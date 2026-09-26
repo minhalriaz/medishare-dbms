@@ -41,3 +41,15 @@ npm run dev -- -p 3001
 
 The Inventory UI does not use mock CRUD data. Create, view, edit, and delete actions call the NestJS backend directly, and successful mutations refresh the list from the backend.
 
+
+### Distribution items
+
+Run `database/schema/distribution_item_schema.sql` in SQL Server **after** the distribution,
+inventory, donation item, medicine, and request item schemas. The new
+`/distribution-items` screen adds, edits, and removes medicine batches for a
+distribution. Each operation adjusts inventory atomically and rejects an item
+from another organization, an unrequested medicine, insufficient stock, or a
+quantity above the requested total. The API routes are
+`GET /distribution-items`, `GET /distribution-items/options`,
+`GET /distribution-items/:id`, `POST /distribution-items`,
+`PATCH /distribution-items/:id`, and `DELETE /distribution-items/:id`.
