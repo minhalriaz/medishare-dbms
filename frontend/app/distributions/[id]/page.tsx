@@ -164,8 +164,6 @@ export default function DistributionDetailsPage() {
                 </div>
               </section>
 
-              <Link href="/distribution-items" className="inline-flex rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700">Manage distribution items</Link>
-
               <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
                 <div className="mb-4 flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
