@@ -17,6 +17,7 @@ import { MedicineModule } from './medicine/medicine.module';
 
 import { VerificationModule } from './verification/verification.module';
 import { DistributionModule } from './distribution/distribution.module';
+import { DistributionItemModule } from './distribution-item/distribution-item.module';
 import { RagModule } from './rag/rag.module';
 
 @Module({
@@ -56,6 +57,7 @@ import { RagModule } from './rag/rag.module';
         VerificationModule,
         RequestItemModule,
         DistributionModule,
+        DistributionItemModule,
         RagModule,
     ],
 
