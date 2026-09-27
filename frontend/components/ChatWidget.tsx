@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, KeyboardEvent, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import { Bot, ChevronDown, ChevronUp, Send, X } from 'lucide-react';
 import { ragApi, RagSource } from '@/services/ragApi';
@@ -13,6 +14,7 @@ type Message = {
 };
 
 export default function ChatWidget() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,7 +39,8 @@ export default function ChatWidget() {
     setLoading(true);
 
     try {
-      const response = await ragApi.ask(question);
+      const history = messages.map(({ role, content }) => ({ role, content }));
+      const response = await ragApi.ask(question, history);
 
       const assistantMessage: Message = {
         id: Date.now() + 1,
@@ -87,6 +90,8 @@ export default function ChatWidget() {
     setMessages([]);
     setOpenSources(null);
   }
+
+  if (pathname === '/rag') return null;
 
   return (
     <>
@@ -194,20 +199,17 @@ export default function ChatWidget() {
                                 {message.sources.map(
                                   (source) => (
                                     <div
-                                      key={source.chunk_id}
+                                      key={`${source.kind}-${source.kind === 'knowledge' ? source.chunk_id : source.label}`}
                                       className="flex items-center justify-between rounded-md bg-gray-50 px-2 py-1.5 text-[10px]"
                                     >
                                       <span className="text-gray-500">
-                                        📄 Knowledge chunk{' '}
-                                        {source.chunk_id}
+                                          {source.label}
                                       </span>
-
-                                      <span className="font-semibold text-emerald-600">
-                                        {(
-                                          source.similarity * 100
-                                        ).toFixed(1)}
-                                        %
-                                      </span>
+                                        {source.kind === 'knowledge' && (
+                                          <span className="font-semibold text-emerald-600">
+                                            {(source.similarity * 100).toFixed(1)}%
+                                          </span>
+                                        )}
                                     </div>
                                   ),
                                 )}

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { getRepositoryToken } from '@nestjs/typeorm';
+import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 import { InventoryService } from './inventory.service';
 import { Inventory } from './entities/inventory.entity';
 
@@ -18,6 +18,12 @@ describe('InventoryService', () => {
             find: jest.fn(),
             findOneBy: jest.fn(),
             remove: jest.fn(),
+          },
+        },
+        {
+          provide: getDataSourceToken(),
+          useValue: {
+            query: jest.fn(),
           },
         },
       ],

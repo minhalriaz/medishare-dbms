@@ -1,9 +1,19 @@
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
-export interface RagSource {
-  chunk_id: number;
-  similarity: number;
+export type RagSource =
+  | {
+      kind: 'knowledge';
+      label: string;
+      chunk_id: number;
+      similarity: number;
+    }
+  | { kind: 'database'; label: string; table: string }
+  | { kind: 'application'; label: string; section: string };
+
+export interface RagConversationTurn {
+  role: 'user' | 'assistant';
+  content: string;
 }
 
 export interface RagAskResponse {
@@ -14,7 +24,10 @@ export interface RagAskResponse {
 }
 
 export const ragApi = {
-  async ask(query: string): Promise<RagAskResponse> {
+  async ask(
+    query: string,
+    history: RagConversationTurn[] = [],
+  ): Promise<RagAskResponse> {
     const res = await fetch(`${BASE_URL}/rag/ask`, {
       method: 'POST',
       headers: {
@@ -22,6 +35,10 @@ export const ragApi = {
       },
       body: JSON.stringify({
         query,
+        history: history.slice(-8).map((turn) => ({
+          ...turn,
+          content: turn.content.slice(-1000),
+        })),
       }),
     });
 
