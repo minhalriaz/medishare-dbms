@@ -162,63 +162,78 @@ export class RagService {
       throw new Error('Search query is required');
     }
 
-    // Generate embedding for the user's question
-    const result = await this.ai.models.embedContent({
-      model: 'gemini-embedding-001',
-      contents: query.trim(),
-    });
+    try {
+      const result = await this.ai.models.embedContent({
+        model: 'gemini-embedding-001',
+        contents: query.trim(),
+      });
 
-    const queryEmbedding = result.embeddings?.[0]?.values;
+      const queryEmbedding = result.embeddings?.[0]?.values;
 
-    if (!queryEmbedding) {
-      throw new Error('Failed to generate query embedding');
-    }
+      if (!queryEmbedding) {
+        throw new Error('Failed to generate query embedding');
+      }
 
-    // Get all chunks that have embeddings
-    const chunks = await this.dataSource.query(`
-      SELECT
-        chunk_id,
-        document_id,
-        chunk_order,
-        chunk_text,
-        embedding
-      FROM rag_chunks
-      WHERE embedding IS NOT NULL
-    `);
+      const chunks = await this.dataSource.query(`
+        SELECT
+          chunk_id,
+          document_id,
+          chunk_order,
+          chunk_text,
+          embedding
+        FROM rag_chunks
+        WHERE embedding IS NOT NULL
+      `);
 
-    if (chunks.length === 0) {
+      if (chunks.length === 0) {
+        return {
+          message: 'No embedded chunks found',
+          results: [],
+        };
+      }
+
+      const results = chunks
+        .map((chunk) => {
+          const chunkEmbedding = JSON.parse(chunk.embedding);
+
+          const similarity = this.cosineSimilarity(
+            queryEmbedding,
+            chunkEmbedding,
+          );
+
+          return {
+            chunk_id: chunk.chunk_id,
+            document_id: chunk.document_id,
+            chunk_order: chunk.chunk_order,
+            chunk_text: chunk.chunk_text,
+            similarity,
+          };
+        })
+        .sort((a, b) => b.similarity - a.similarity);
+
       return {
-        message: 'No embedded chunks found',
+        message: 'Semantic search completed',
+        query,
+        results: results.slice(0, 3),
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (this.isKnowledgeIndexUnavailable(message)) {
+        return {
+          message: 'Knowledge search is unavailable because the RAG tables are not initialized yet.',
+          query,
+          results: [],
+        };
+      }
+
+      return {
+        message: 'Knowledge search is temporarily unavailable. Falling back to database and application context.',
+        query,
         results: [],
       };
     }
-
-    // Calculate cosine similarity
-    const results = chunks
-      .map((chunk) => {
-        const chunkEmbedding = JSON.parse(chunk.embedding);
-
-        const similarity = this.cosineSimilarity(
-          queryEmbedding,
-          chunkEmbedding,
-        );
-
-        return {
-          chunk_id: chunk.chunk_id,
-          document_id: chunk.document_id,
-          chunk_order: chunk.chunk_order,
-          chunk_text: chunk.chunk_text,
-          similarity,
-        };
-      })
-      .sort((a, b) => b.similarity - a.similarity);
-
-    return {
-      message: 'Semantic search completed',
-      query,
-      results: results.slice(0, 3),
-    };
   }
+
   async ask(query: string, history: RagConversationTurn[] = []) {
     if (!query || !query.trim()) {
       throw new Error('Question is required');
@@ -240,35 +255,44 @@ export class RagService {
     }
 
     if (plan.mode !== 'database') {
-      const searchResult = await this.search(normalizedQuery);
-      const topChunks = searchResult.results ?? [];
-      knowledgeContext = topChunks
-        .map((chunk, index) => `KNOWLEDGE SOURCE ${index + 1}:\n${chunk.chunk_text}`)
-        .join('\n\n');
-      sources.push(
-        ...topChunks.map((chunk) => ({
-          kind: 'knowledge' as const,
-          label: `Knowledge chunk ${chunk.chunk_id}`,
-          chunk_id: chunk.chunk_id,
-          similarity: chunk.similarity,
-        })),
-      );
+      try {
+        const searchResult = await this.search(normalizedQuery);
+        const topChunks = searchResult.results ?? [];
+        knowledgeContext = topChunks
+          .map((chunk, index) => `KNOWLEDGE SOURCE ${index + 1}:\n${chunk.chunk_text}`)
+          .join('\n\n');
+        sources.push(
+          ...topChunks.map((chunk) => ({
+            kind: 'knowledge' as const,
+            label: `Knowledge chunk ${chunk.chunk_id}`,
+            chunk_id: chunk.chunk_id,
+            similarity: chunk.similarity,
+          })),
+        );
+      } catch {
+        knowledgeContext = '';
+      }
     }
 
     if (plan.mode !== 'knowledge' && plan.entity) {
-      databaseResult = await this.ragDataService.retrieve(plan);
-      databaseContext = databaseResult.applicationOnly
-        ? ''
-        : databaseResult.unavailableReason
-        ? `Live database information unavailable: ${databaseResult.unavailableReason}`
-        : databaseResult.context;
-      sources.push(
-        ...databaseResult.tables.map((table) => ({
-          kind: 'database' as const,
-          label: `Database: ${table}`,
-          table,
-        })),
-      );
+      try {
+        databaseResult = await this.ragDataService.retrieve(plan);
+        databaseContext = databaseResult.applicationOnly
+          ? ''
+          : databaseResult.unavailableReason
+          ? `Live database information unavailable: ${databaseResult.unavailableReason}`
+          : databaseResult.context;
+        sources.push(
+          ...databaseResult.tables.map((table) => ({
+            kind: 'database' as const,
+            label: `Database: ${table}`,
+            table,
+          })),
+        );
+      } catch {
+        databaseResult = undefined;
+        databaseContext = '';
+      }
     }
 
     if (plan.mode === 'database' && databaseResult) {
@@ -337,19 +361,38 @@ USER QUESTION:
 ${normalizedQuery}
 `;
 
-    const response = await this.ai.models.generateContent({
-      model: 'gemini-3.5-flash-lite',
-      contents: prompt,
-    });
-    const answer = response.text?.trim();
-    if (!answer) throw new Error('Gemini returned an empty answer');
+    try {
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-3.5-flash-lite',
+        contents: prompt,
+      });
+      const answer = response.text?.trim();
+      if (!answer) {
+        throw new Error('Gemini returned an empty answer');
+      }
 
-    return {
-      message: 'Hybrid RAG answer generated successfully',
-      query: normalizedQuery,
-      answer,
-      sources,
-    };
+      return {
+        message: 'Hybrid RAG answer generated successfully',
+        query: normalizedQuery,
+        answer,
+        sources,
+      };
+    } catch {
+      const fallbackAnswer =
+        databaseContext || application.context ||
+        "I’m unable to reach the MediShare AI service right now, but the application data is still available.";
+
+      return {
+        message: 'RAG AI service unavailable; using available MediShare context instead.',
+        query: normalizedQuery,
+        answer: fallbackAnswer,
+        sources,
+      };
+    }
+  }
+
+  private isKnowledgeIndexUnavailable(message: string): boolean {
+    return /rag_(documents|chunks)|Invalid object name|does not exist|not initialized/i.test(message);
   }
 
   private insufficientInformation(query: string, sources: RagSource[] = []) {

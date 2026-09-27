@@ -95,6 +95,28 @@ describe('RagService hybrid routing', () => {
     );
   });
 
+  it('falls back when the RAG knowledge tables are missing', async () => {
+    dataSource.query.mockImplementation((sql: string) => {
+      if (sql.includes('FROM rag_chunks')) {
+        return Promise.reject(new Error("Invalid object name 'rag_chunks'."));
+      }
+      return Promise.resolve([]);
+    });
+
+    ragDataService.retrieve.mockResolvedValue({
+      context: 'distribution_count: 2',
+      rows: [{ distribution_count: 2 }],
+      tables: ['distribution'],
+    });
+
+    const result = await service.ask(
+      'Explain the distribution process and tell me how many distributions exist.',
+    );
+
+    expect(result.answer).toContain('Grounded answer.');
+    expect(ai.models.generateContent).toHaveBeenCalled();
+  });
+
   it('does not query or ask Gemini to answer unsupported prices', async () => {
     const result = await service.ask('What is the price of medicine Paracetamol?');
 
