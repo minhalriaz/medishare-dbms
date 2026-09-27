@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { RagService } from './rag.service';
+import { RagAskDto } from './dto/rag-ask.dto';
 
 @Controller('rag')
 export class RagController {
@@ -31,7 +32,7 @@ export class RagController {
   }
 
   @Post('ask')
-  ask(@Body('query') query: string) {
-    return this.ragService.ask(query);
+  ask(@Body() body: RagAskDto) {
+    return this.ragService.ask(body.query, body.history ?? []);
   }
 }

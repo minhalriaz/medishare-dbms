@@ -3,11 +3,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { RagController } from './rag.controller';
 import { RagService } from './rag.service';
+import { DatabaseModule } from '../database/database.module';
+import { RagDataService } from './rag-data.service';
+import { ReportsModule } from '../reports/reports.module';
 
 @Module({
-  imports: [TypeOrmModule],
+  imports: [TypeOrmModule, DatabaseModule, ReportsModule],
   controllers: [RagController],
-  providers: [RagService],
+  providers: [RagService, RagDataService],
   exports: [RagService],
 })
 export class RagModule {}

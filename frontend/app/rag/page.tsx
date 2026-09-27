@@ -36,7 +36,8 @@ export default function RagPage() {
     setLoading(true);
 
     try {
-      const response = await ragApi.ask(question);
+      const history = messages.map(({ role, content }) => ({ role, content }));
+      const response = await ragApi.ask(question, history);
 
       const assistantMessage: Message = {
         id: Date.now() + 1,
@@ -90,7 +91,7 @@ export default function RagPage() {
       <header className="header">
         <div className="headerTitle">MediShare AI Assistant</div>
         <div className="headerSubtitle">
-          Ask questions about the MediShare knowledge base
+          Ask questions about MediShare processes and current system data
         </div>
       </header>
 
@@ -160,20 +161,15 @@ export default function RagPage() {
                           <div className="sourceList">
                             {message.sources.map((source) => (
                               <div
-                                key={source.chunk_id}
+                                key={`${source.kind}-${source.kind === 'knowledge' ? source.chunk_id : source.label}`}
                                 className="sourceItem"
                               >
-                                <span>
-                                  📄 Knowledge chunk{' '}
-                                  {source.chunk_id}
-                                </span>
-
-                                <span className="similarity">
-                                  {(
-                                    source.similarity * 100
-                                  ).toFixed(1)}
-                                  %
-                                </span>
+                                <span>{source.label}</span>
+                                {source.kind === 'knowledge' && (
+                                  <span className="similarity">
+                                    {(source.similarity * 100).toFixed(1)}%
+                                  </span>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -224,7 +220,7 @@ export default function RagPage() {
 
         <div className="bottomBar">
           <span className="disclaimer">
-            Answers are generated from the MediShare knowledge base.
+            Answers use MediShare knowledge and current application data.
           </span>
 
           {messages.length > 0 && (
