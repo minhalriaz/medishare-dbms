@@ -9,15 +9,14 @@ import {
   FileText,
   HandHeart,
   HeartHandshake,
-  LayoutDashboard,
   Pill,
-  Settings,
+  
   ShieldCheck,
   Users,
 } from 'lucide-react';
 
 const menuItems = [
-  { name: 'Dashboard', icon: LayoutDashboard, href: '/' },
+ 
   { name: 'AI Assistant', icon: Bot, href: '/rag' },
   { name: 'Donations', icon: HeartHandshake, href: '/donations' },
   { name: 'Medicine', icon: Pill, href: '/medicine' },
@@ -30,7 +29,7 @@ const menuItems = [
   { name: 'Organizations', icon: Building2, href: '/organizations' },
   { name: 'Users', icon: Users, href: '/users' },
   { name: 'Reports', icon: BarChart2, href: '/reports' },
-  { name: 'Settings', icon: Settings, href: '#' },
+  
 ];
 
 export default function Sidebar() {
@@ -94,9 +93,7 @@ export default function Sidebar() {
             MediShare Admin
           </p>
 
-          <p className="mt-1 text-[11px] leading-4 text-emerald-700/70">
-            Manage donations and medicine distribution from one place.
-          </p>
+          
         </div>
       </div>
     </aside>
